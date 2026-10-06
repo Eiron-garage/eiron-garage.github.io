@@ -219,7 +219,7 @@ const STAGES = [
   { id: 'ready',       label: 'מוכן לאיסוף',         color: '#22c55e' },
   { id: 'delivered',   label: 'נמסר ללקוח',          color: '#334155' },
 ];
-const FIELDS = ['plate', 'model', 'kind', 'customer', 'phone', 'task', 'priority', 'eta', 'notes'];
+const FIELDS = ['plate', 'model', 'customer', 'phone', 'task', 'priority', 'eta', 'notes'];
 const MAX_LEN = { notes: 2000, task: 300, jobCard: 40 };
 
 const TV = new URLSearchParams(location.search).has('tv');
@@ -374,7 +374,7 @@ function matches(v) {
   if (urgentOnly && v.priority !== 'urgent') return false;
   const q = $('search').value.trim().toLowerCase();
   if (!q) return true;
-  return [v.plate, v.jobCard, v.model, v.kind, v.customer, v.task, v.notes, ...stagesOf(v).map(s => stageOf(s).label)]
+  return [v.plate, v.jobCard, v.model, v.customer, v.task, v.notes, ...stagesOf(v).map(s => stageOf(s).label)]
     .some(f => String(f || '').toLowerCase().includes(q));
 }
 
@@ -390,7 +390,7 @@ function cardHtml(v, col) {
       ${v.plate ? `<span class="plate">${esc(v.plate)}</span>` : ''}
       ${v.priority === 'urgent' ? '<span class="badge urgent">דחוף</span>' : ''}
     </div>
-    <div><span class="model">${esc(v.model || '—')}</span> ${v.kind ? `<span class="kind">· ${esc(v.kind)}</span>` : ''}</div>
+    <div><span class="model">${esc(v.model || '—')}</span></div>
     ${v.task ? `<div class="task">🔧 ${esc(v.task)}</div>` : ''}
     ${others ? `<div class="chips"><span class="kind">גם ב:</span>${others}</div>` : ''}
     <div class="meta">
@@ -407,7 +407,7 @@ function rowHtml(v) {
   return `
   <button type="button" class="trow ${v.priority === 'urgent' ? 'urgent' : ''}" style="--c:${stageOf(first).color}" data-id="${esc(v.id)}">
     <span>${v.plate ? `<span class="plate">${esc(v.plate)}</span>` : '—'}</span>
-    <span><b>${esc(v.model || '—')}</b>${v.kind ? ` <span class="kind">· ${esc(v.kind)}</span>` : ''}
+    <span><b>${esc(v.model || '—')}</b>
       ${v.priority === 'urgent' ? ' <span class="badge urgent">דחוף</span>' : ''}</span>
     <span class="chips">${stageChips(v, null, true)}</span>
     <span class="r-task">${v.task ? '🔧 ' + esc(v.task) : '<span class="kind">—</span>'}</span>
@@ -519,7 +519,6 @@ function openVehicle(id) {
     <div class="grid2">
       ${field('plate', 'מספר רישוי', v)}
       ${field('model', 'יצרן / דגם', v, 'placeholder="לדוגמה: IVECO Eurocargo"')}
-      ${field('kind', 'סוג רכב', v, 'placeholder="לדוגמה: כבאית, משאית, ג׳יפ"')}
       ${field('customer', 'לקוח / יחידה', v)}
       ${field('phone', 'טלפון', v, 'type="tel"')}
       ${field('jobCard', 'מספר כרטיס עבודה (נשר) · לא מוצג בלוח', v, 'inputmode="numeric" dir="ltr"')}
