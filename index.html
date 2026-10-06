@@ -70,7 +70,7 @@ header{position:sticky;top:0;z-index:10;background:rgba(11,17,32,.95);backdrop-f
 
 /* תצוגת שורות */
 .rows{padding:16px;display:flex;flex-direction:column;gap:6px}
-.rhead,.trow{display:grid;grid-template-columns:140px minmax(150px,1.2fr) minmax(170px,1.5fr) minmax(170px,1.6fr) 110px minmax(110px,1fr) 130px;gap:12px;align-items:center}
+.rhead,.trow{display:grid;grid-template-columns:140px minmax(150px,1.2fr) minmax(170px,1.5fr) minmax(170px,1.6fr) minmax(110px,1fr) 130px;gap:12px;align-items:center}
 .rhead{font-size:12px;color:var(--muted);padding:0 19px 0 14px}
 .trow{background:var(--panel);border:1px solid var(--line);border-inline-start:5px solid var(--c);border-radius:10px;padding:10px 14px;text-align:start;width:100%;font-size:14px}
 .trow:hover{border-color:var(--c)}
@@ -172,7 +172,7 @@ body.tv .col-h{font-size:19px}
       <span class="clock" id="clock"></span>
     </div>
     <div class="tools">
-      <input class="search" id="search" type="search" placeholder="חיפוש: מספר רישוי, דגם, לקוח, מכונאי…"/>
+      <input class="search" id="search" type="search" placeholder="חיפוש: מספר רישוי, דגם, לקוח…"/>
       <button class="btn" id="urgentBtn">🚨 דחופים</button>
       <button class="btn" id="viewBtn">📋 נמסרו</button>
       <button class="btn" id="layoutBtn">☰ תצוגת שורות</button>
@@ -219,7 +219,7 @@ const STAGES = [
   { id: 'ready',       label: 'מוכן לאיסוף',         color: '#22c55e' },
   { id: 'delivered',   label: 'נמסר ללקוח',          color: '#334155' },
 ];
-const FIELDS = ['plate', 'model', 'kind', 'customer', 'phone', 'mechanic', 'task', 'priority', 'eta', 'notes'];
+const FIELDS = ['plate', 'model', 'kind', 'customer', 'phone', 'task', 'priority', 'eta', 'notes'];
 const MAX_LEN = { notes: 2000, task: 300 };
 
 const TV = new URLSearchParams(location.search).has('tv');
@@ -374,7 +374,7 @@ function matches(v) {
   if (urgentOnly && v.priority !== 'urgent') return false;
   const q = $('search').value.trim().toLowerCase();
   if (!q) return true;
-  return [v.plate, v.model, v.kind, v.customer, v.mechanic, v.task, v.notes, ...stagesOf(v).map(s => stageOf(s).label)]
+  return [v.plate, v.model, v.kind, v.customer, v.task, v.notes, ...stagesOf(v).map(s => stageOf(s).label)]
     .some(f => String(f || '').toLowerCase().includes(q));
 }
 
@@ -395,7 +395,6 @@ function cardHtml(v, col) {
     ${others ? `<div class="chips"><span class="kind">גם ב:</span>${others}</div>` : ''}
     <div class="meta">
       <span>⏱ ${duration(sinceOf(v, col))} בשלב</span>
-      ${v.mechanic ? `<span>👨‍🔧 ${esc(v.mechanic)}</span>` : ''}
       ${v.customer ? `<span>👤 ${esc(v.customer)}</span>` : ''}
       ${v.eta ? `<span class="${late ? 'late' : ''}">🎯 ${late ? 'באיחור · ' : ''}${fmtTime(v.eta)}</span>` : ''}
     </div>
@@ -412,7 +411,6 @@ function rowHtml(v) {
       ${v.priority === 'urgent' ? ' <span class="badge urgent">דחוף</span>' : ''}</span>
     <span class="chips">${stageChips(v, null, true)}</span>
     <span class="r-task">${v.task ? '🔧 ' + esc(v.task) : '<span class="kind">—</span>'}</span>
-    <span class="r-meta">${v.mechanic ? '👨‍🔧 ' + esc(v.mechanic) : ''}</span>
     <span class="r-meta">${v.customer ? '👤 ' + esc(v.customer) : ''}</span>
     <span class="r-meta ${late ? 'late' : ''}">${v.eta ? `🎯 ${late ? 'באיחור · ' : ''}${fmtTime(v.eta)}` : ''}</span>
   </button>`;
@@ -460,7 +458,7 @@ function renderRows(shown) {
     stageIndex(stagesOf(a)[0]) - stageIndex(stagesOf(b)[0]) ||
     new Date(a.createdAt) - new Date(b.createdAt));
   $('main').innerHTML = `<div class="rows">
-    <div class="rhead"><span>מספר רישוי</span><span>רכב</span><span>שלבים</span><span>מה עושים עכשיו</span><span>מכונאי</span><span>לקוח</span><span>צפי סיום</span></div>
+    <div class="rhead"><span>מספר רישוי</span><span>רכב</span><span>שלבים</span><span>מה עושים עכשיו</span><span>לקוח</span><span>צפי סיום</span></div>
     ${list.length ? list.map(rowHtml).join('') : '<div class="empty" style="padding:30px">אין רכבים במוסך</div>'}
   </div>`;
 }
@@ -522,7 +520,6 @@ function openVehicle(id) {
       ${field('plate', 'מספר רישוי', v)}
       ${field('model', 'יצרן / דגם', v, 'placeholder="לדוגמה: IVECO Eurocargo"')}
       ${field('kind', 'סוג רכב', v, 'placeholder="לדוגמה: כבאית, משאית, ג׳יפ"')}
-      ${field('mechanic', 'מכונאי אחראי', v)}
       ${field('customer', 'לקוח / יחידה', v)}
       ${field('phone', 'טלפון', v, 'type="tel"')}
       <label class="full">מה עושים עכשיו<input name="task" value="${esc(v.task)}" placeholder="לדוגמה: החלפת רפידות ודיסקים קדמיים"/></label>
