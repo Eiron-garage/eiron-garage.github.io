@@ -11,12 +11,19 @@ service cloud.firestore {
         && request.auth.token.email in ['m.eiron.co.il@gmail.com'];
     }
 
+    function stageIds() {
+      return ['reception', 'diagnostics', 'approval', 'parts', 'mechanics', 'electrical',
+              'ac', 'bodywork', 'qa', 'ready', 'delivered'];
+    }
+
     function validVehicle(d) {
       return d.keys().hasOnly(['plate', 'model', 'kind', 'customer', 'phone', 'mechanic', 'task',
-                               'priority', 'eta', 'notes', 'stage', 'createdAt', 'stageSince',
-                               'updatedAt', 'updatedBy', 'history'])
-        && d.stage in ['reception', 'diagnostics', 'approval', 'parts', 'mechanics',
-                       'electrical', 'bodywork', 'qa', 'ready', 'delivered']
+                               'priority', 'eta', 'notes', 'stage', 'stages', 'since', 'createdAt',
+                               'stageSince', 'updatedAt', 'updatedBy', 'history'])
+        && d.stage in stageIds()
+        && (!('stages' in d) || (d.stages is list && d.stages.size() >= 1
+                                 && d.stages.size() <= 11 && d.stages.hasOnly(stageIds())))
+        && (!('since' in d) || d.since is map)
         && d.priority in ['normal', 'urgent']
         && d.notes is string && d.notes.size() <= 2000
         && d.task is string && d.task.size() <= 300
