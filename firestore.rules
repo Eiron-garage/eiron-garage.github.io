@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// חוקי אבטחה למסד הנתונים.
+// מדביקים את כל הקובץ ב: Firebase → Firestore Database → Rules → Publish
+// חשוב: להחליף את garage@example.com במייל של חשבון המוסך (אותו מייל כמו ב-config.js).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email in ['garage@example.com'];
+    }
+
+    function validVehicle(d) {
+      return d.keys().hasOnly(['plate', 'model', 'kind', 'customer', 'phone', 'mechanic', 'task',
+                               'priority', 'eta', 'notes', 'stage', 'createdAt', 'stageSince',
+                               'updatedAt', 'updatedBy', 'history'])
+        && d.stage in ['reception', 'diagnostics', 'approval', 'parts', 'mechanics',
+                       'electrical', 'bodywork', 'qa', 'ready', 'delivered']
+        && d.priority in ['normal', 'urgent']
+        && d.notes is string && d.notes.size() <= 2000
+        && d.task is string && d.task.size() <= 300
+        && d.history is list && d.history.size() <= 500;
+    }
+
+    match /vehicles/{id} {
+      allow read: if isStaff();
+      allow create, update: if isStaff() && validVehicle(request.resource.data);
+      allow delete: if isStaff();
+    }
+  }
+}
