@@ -2,14 +2,13 @@ rules_version = '2';
 
 // חוקי אבטחה למסד הנתונים.
 // מדביקים את כל הקובץ ב: Firebase → Firestore Database → Rules → Publish
-// חשוב: להחליף את garage@example.com במייל של חשבון המוסך (אותו מייל כמו ב-config.js).
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isStaff() {
       return request.auth != null
-        && request.auth.token.email in ['garage@example.com'];
+        && request.auth.token.email in ['m.eiron.co.il@gmail.com'];
     }
 
     function validVehicle(d) {
