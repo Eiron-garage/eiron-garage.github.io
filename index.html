@@ -172,7 +172,7 @@ body.tv .col-h{font-size:19px}
       <span class="clock" id="clock"></span>
     </div>
     <div class="tools">
-      <input class="search" id="search" type="search" placeholder="חיפוש: מספר רישוי, דגם, לקוח…"/>
+      <input class="search" id="search" type="search" placeholder="חיפוש: מספר רישוי, כרטיס עבודה, דגם, לקוח…"/>
       <button class="btn" id="urgentBtn">🚨 דחופים</button>
       <button class="btn" id="viewBtn">📋 נמסרו</button>
       <button class="btn" id="layoutBtn">☰ תצוגת שורות</button>
@@ -220,7 +220,7 @@ const STAGES = [
   { id: 'delivered',   label: 'נמסר ללקוח',          color: '#334155' },
 ];
 const FIELDS = ['plate', 'model', 'kind', 'customer', 'phone', 'task', 'priority', 'eta', 'notes'];
-const MAX_LEN = { notes: 2000, task: 300 };
+const MAX_LEN = { notes: 2000, task: 300, jobCard: 40 };
 
 const TV = new URLSearchParams(location.search).has('tv');
 if (TV) document.body.classList.add('tv');
@@ -374,7 +374,7 @@ function matches(v) {
   if (urgentOnly && v.priority !== 'urgent') return false;
   const q = $('search').value.trim().toLowerCase();
   if (!q) return true;
-  return [v.plate, v.model, v.kind, v.customer, v.task, v.notes, ...stagesOf(v).map(s => stageOf(s).label)]
+  return [v.plate, v.jobCard, v.model, v.kind, v.customer, v.task, v.notes, ...stagesOf(v).map(s => stageOf(s).label)]
     .some(f => String(f || '').toLowerCase().includes(q));
 }
 
@@ -522,6 +522,7 @@ function openVehicle(id) {
       ${field('kind', 'סוג רכב', v, 'placeholder="לדוגמה: כבאית, משאית, ג׳יפ"')}
       ${field('customer', 'לקוח / יחידה', v)}
       ${field('phone', 'טלפון', v, 'type="tel"')}
+      ${field('jobCard', 'מספר כרטיס עבודה (נשר) · לא מוצג בלוח', v, 'inputmode="numeric" dir="ltr"')}
       <label class="full">מה עושים עכשיו<input name="task" value="${esc(v.task)}" placeholder="לדוגמה: החלפת רפידות ודיסקים קדמיים"/></label>
       <label>צפי סיום<input type="datetime-local" name="eta" value="${toLocalInput(v.eta)}"/></label>
       <label>עדיפות<select name="priority">
@@ -559,6 +560,10 @@ function formData() {
   const out = {};
   for (const f of FIELDS) out[f] = clean(f, o[f]);
   out.eta = o.eta ? new Date(o.eta).toISOString() : '';
+  // מספר כרטיס עבודה: נשמר רק כשיש ערך (או כשהיה ערך ונמחק). לא מוצג בכרטיסים / בשורות / בטלוויזיה
+  const jobCard = clean('jobCard', o.jobCard);
+  const prev = vehicles.find(x => x.id === openId);
+  if (jobCard || (prev && prev.jobCard)) out.jobCard = jobCard;
   return out;
 }
 

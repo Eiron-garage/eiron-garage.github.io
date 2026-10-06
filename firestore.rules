@@ -19,11 +19,12 @@ service cloud.firestore {
     function validVehicle(d) {
       return d.keys().hasOnly(['plate', 'model', 'kind', 'customer', 'phone', 'mechanic', 'task',
                                'priority', 'eta', 'notes', 'stage', 'stages', 'since', 'createdAt',
-                               'stageSince', 'updatedAt', 'updatedBy', 'history'])
+                               'stageSince', 'updatedAt', 'updatedBy', 'history', 'jobCard'])
         && d.stage in stageIds()
         && (!('stages' in d) || (d.stages is list && d.stages.size() >= 1
                                  && d.stages.size() <= 11 && d.stages.hasOnly(stageIds())))
         && (!('since' in d) || d.since is map)
+        && (!('jobCard' in d) || (d.jobCard is string && d.jobCard.size() <= 40))
         && d.priority in ['normal', 'urgent']
         && d.notes is string && d.notes.size() <= 2000
         && d.task is string && d.task.size() <= 300
