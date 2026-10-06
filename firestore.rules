@@ -2,39 +2,14 @@ rules_version = '2';
 
 // חוקי אבטחה למסד הנתונים.
 // מדביקים את כל הקובץ ב: Firebase → Firestore Database → Rules → Publish
+// רק חשבון המוסך יכול לקרוא ולכתוב. אין כאן בדיקת שדות, כדי שאפשר יהיה
+// להוסיף שדות ושלבים באפליקציה בלי לעדכן את החוקים בכל פעם.
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isStaff() {
-      return request.auth != null
-        && request.auth.token.email in ['m.eiron.co.il@gmail.com'];
-    }
-
-    function stageIds() {
-      return ['reception', 'diagnostics', 'approval', 'parts', 'mechanics', 'electrical',
-              'ac', 'bodywork', 'qa', 'ready', 'delivered'];
-    }
-
-    function validVehicle(d) {
-      return d.keys().hasOnly(['plate', 'model', 'kind', 'customer', 'phone', 'mechanic', 'task',
-                               'priority', 'eta', 'notes', 'stage', 'stages', 'since', 'createdAt',
-                               'stageSince', 'updatedAt', 'updatedBy', 'history', 'jobCard'])
-        && d.stage in stageIds()
-        && (!('stages' in d) || (d.stages is list && d.stages.size() >= 1
-                                 && d.stages.size() <= 11 && d.stages.hasOnly(stageIds())))
-        && (!('since' in d) || d.since is map)
-        && (!('jobCard' in d) || (d.jobCard is string && d.jobCard.size() <= 40))
-        && d.priority in ['normal', 'urgent']
-        && d.notes is string && d.notes.size() <= 2000
-        && d.task is string && d.task.size() <= 300
-        && d.history is list && d.history.size() <= 500;
-    }
-
     match /vehicles/{id} {
-      allow read: if isStaff();
-      allow create, update: if isStaff() && validVehicle(request.resource.data);
-      allow delete: if isStaff();
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'm.eiron.co.il@gmail.com';
     }
   }
 }
