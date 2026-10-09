@@ -8,11 +8,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /warehouse_items/{id} {
       allow read, write: if request.auth != null
-        && request.auth.token.email == 'WAREHOUSE_EMAIL_HERE';
+        && request.auth.token.email == 'm.eiron.co.il@gmail.com';
     }
     match /warehouse_log/{id} {
       allow read, write: if request.auth != null
-        && request.auth.token.email == 'WAREHOUSE_EMAIL_HERE';
+        && request.auth.token.email == 'm.eiron.co.il@gmail.com';
     }
   }
 }
