@@ -761,6 +761,13 @@ function impPlan(){
     const qs=cell(r,'qty').replace(/[^\d.-]/g,''); if(qs!=='')data.qty=Math.max(0,Math.round(+qs)||0); else if(!ex)data.qty=0;
     const loc=parseLoc(cell(r,'loc')); if(loc)Object.assign(data,loc); else if(!ex){Object.assign(data,{unit:'',level:0,slot:0});noLoc++;}
     if(!ex)data.note='';
+    const prev=out.get(key);
+    if(prev){ // same part counted in more than one spot: add up the quantities, keep the first location
+      if(data.qty!==undefined)data.qty+=prev.data.qty||0;
+      for(const f of ['unit','level','slot'])if(prev.data[f]!==undefined&&prev.data.unit)data[f]=prev.data[f];
+      const where=loc?`${loc.unit}-${loc.level}-${LETTERS[loc.slot]}`:'';
+      data.note=[prev.data.note,where&&`גם ב־${where}`].filter(Boolean).join(' · ');
+    }
     out.set(key,{key,data,isNew:!ex});
   }
   const ops=[...out.values()];

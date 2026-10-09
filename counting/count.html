@@ -1,0 +1,431 @@
+<title>ספירת מלאי עירון</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@700&family=Heebo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one phone-first column (max 680px): sticky location bar, big camera button, photo queue, rows of the current shelf, export at the end. Same night-shift look as the warehouse site. */
+:root{
+  --ground:#121416; --panel:#1a1d20; --panel-2:#22262a; --line:#30363b;
+  --ink:#ece8df; --muted:#9aa2a9; --hazard:#f5c518; --hazard-ink:#1a1500;
+  --ok:#4cc38a; --warn:#f0a43a; --bad:#ef5b5b;
+  --f-display:'Karantina','Heebo',system-ui,sans-serif;
+  --f-body:'Heebo',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --f-code:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+.code{font-family:var(--f-code);direction:ltr;unicode-bidi:isolate}
+.wrap{max-width:680px;margin:0 auto;padding-inline:16px;padding-block:16px 48px;display:flex;flex-direction:column;gap:18px}
+
+header{display:flex;align-items:center;gap:12px}
+.mark{width:34px;height:34px;flex:none;border-radius:5px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 7px,#111 7px 14px);box-shadow:inset 0 0 0 2px #111}
+header h1{margin:0;font-family:var(--f-display);font-size:38px;line-height:.9}
+header p{margin:2px 0 0;color:var(--muted);font-size:13px}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-family:var(--f-code);font-size:22px;font-variant-numeric:tabular-nums;line-height:1.15}
+.stat span{font-size:12px;color:var(--muted)}
+
+.locbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.locrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.locrow label{font-size:12.5px;color:var(--muted);font-weight:600;min-width:44px}
+.locbar select{flex:1;min-width:0;background:var(--panel-2);border:1.5px solid var(--line);border-radius:9px;padding:9px 10px;font-size:16px}
+.seg{display:flex;gap:5px;flex-wrap:wrap}
+.seg button{min-width:40px;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:6px 10px;font-family:var(--f-code);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--hazard);color:var(--hazard-ink);border-color:var(--hazard);font-weight:600}
+.loccode{font-family:var(--f-code);font-size:20px;font-weight:600;color:var(--hazard);direction:ltr;margin-inline-start:auto}
+
+.shoot{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.big{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:14px;background:var(--hazard);color:var(--hazard-ink);font-weight:700;font-size:20px;padding:20px 12px;text-align:center}
+.big svg{width:28px;height:28px;flex:none}
+.alt{display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid var(--line);background:var(--panel-2);border-radius:14px;font-size:14px;font-weight:500;padding:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.queue{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.ph{position:relative;flex:none;width:68px;height:68px;border-radius:10px;overflow:hidden;border:2px solid var(--line);background:var(--panel-2)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph i{position:absolute;inset:auto 4px 4px auto;min-width:22px;height:22px;border-radius:11px;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:700;padding:0 5px;background:var(--panel);color:var(--ink)}
+.ph.work{border-color:var(--hazard)} .ph.work i{background:var(--hazard);color:var(--hazard-ink)}
+.ph.done{border-color:var(--ok)} .ph.done i{background:var(--ok);color:#06210f}
+.ph.err{border-color:var(--bad)} .ph.err i{background:var(--bad);color:#fff}
+.ph button{position:absolute;inset:0;background:none;border:0}
+.qnote{font-size:12.5px;color:var(--muted);margin:0}
+
+.note{border:1px dashed color-mix(in srgb,var(--hazard) 55%,transparent);color:color-mix(in srgb,var(--hazard) 85%,var(--ink));border-radius:10px;padding:10px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:8px}
+.note.err{border-color:color-mix(in srgb,var(--bad) 60%,transparent);color:color-mix(in srgb,var(--bad) 70%,var(--ink))}
+.note ul{margin:0;padding-inline-start:18px}
+
+h2{margin:0;font-size:15px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+h2 small{color:var(--muted);font-weight:400;font-size:13px}
+.tabs{display:flex;gap:6px}
+.tabs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;font-size:13px}
+.tabs button[aria-pressed="true"]{border-color:var(--hazard);color:var(--hazard)}
+
+.rows{display:flex;flex-direction:column;gap:8px}
+.r{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.r.flag{border-color:color-mix(in srgb,var(--warn) 55%,var(--line))}
+.r.unread{border-color:color-mix(in srgb,var(--bad) 55%,var(--line))}
+.r .main{min-width:0;display:flex;flex-direction:column;gap:4px}
+.r input.sku{font-family:var(--f-code);font-size:17px;font-weight:600;background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0;width:100%;direction:ltr;text-align:right;outline:none}
+.r input.sku:focus,.r input.nm:focus{border-bottom-color:var(--hazard)}
+.r input.nm{background:transparent;border:0;border-bottom:1px dashed transparent;padding:1px 0;width:100%;outline:none;font-size:14.5px}
+.r .meta{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--muted);align-items:center}
+.tag{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 8px;background:var(--panel-2);color:var(--muted)}
+.tag.b{color:var(--ink)}
+.tag.w{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.tag.x{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.step{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel-2)}
+.step button{border:0;background:none;width:38px;height:38px;font-size:19px}
+.step b{min-width:40px;text-align:center;font-family:var(--f-code);font-size:17px;font-variant-numeric:tabular-nums}
+.r .del{grid-column:2;justify-self:end;border:0;background:none;color:var(--muted);font-size:12.5px;padding:2px 4px}
+.r .del.armed{color:var(--bad);font-weight:600}
+.grp{font-family:var(--f-code);font-size:13px;color:var(--hazard);margin:6px 0 -2px;direction:ltr;text-align:right}
+.empty{color:var(--muted);font-size:14px;background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:16px;text-align:center}
+
+.btn{border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:10px 14px;font-weight:500}
+.btn:hover:not(:disabled){border-color:var(--hazard)}
+.btn.primary{background:var(--hazard);color:var(--hazard-ink);border-color:var(--hazard);font-weight:700}
+.btn.danger{color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:#fff;border-color:var(--bad)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions .grow{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:9px 16px;border-radius:9px;font-size:14px;font-weight:500;z-index:20;max-width:calc(100% - 32px)}
+textarea.cp{width:100%;height:90px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--f-code);font-size:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="mark" aria-hidden="true"></div>
+    <div><h1>ספירת מלאי</h1><p>מטיילי עירון · מצלמים מדבקות, הרשימה נבנית לבד</p></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="stItems">0</b><span>מק״טים</span></div>
+    <div class="stat"><b id="stUnits">0</b><span>יחידות</span></div>
+    <div class="stat"><b id="stQueue">0</b><span>תמונות בתור</span></div>
+  </div>
+
+  <section class="locbar" aria-label="המיקום שסופרים עכשיו">
+    <div class="locrow">
+      <label for="unit">מדף</label>
+      <select id="unit"></select>
+      <span class="loccode" id="locCode"></span>
+    </div>
+    <div class="locrow"><label>קומה</label><div class="seg" id="levels"></div></div>
+    <div class="locrow"><label>תא</label><div class="seg" id="slots"></div></div>
+  </section>
+
+  <div class="shoot">
+    <label class="big" for="cam">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="4"/></svg>
+      צלם מדבקה
+    </label>
+    <label class="alt" for="gal">בחירת כמה תמונות מהגלריה</label>
+    <input class="sr" type="file" id="cam" accept="image/*" capture="environment">
+    <input class="sr" type="file" id="gal" accept="image/*" multiple>
+  </div>
+
+  <div id="status"></div>
+  <div class="queue" id="queue" aria-label="תמונות"></div>
+
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <h2 id="listTitle"></h2>
+      <div class="tabs"><button type="button" id="tabHere" aria-pressed="true">המיקום הזה</button><button type="button" id="tabAll" aria-pressed="false">הכל</button></div>
+    </div>
+    <div class="rows" id="rows"></div>
+    <button class="btn" type="button" id="addManual">+ הוספה ידנית למיקום הזה</button>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <h2>סיום והעברה</h2>
+    <p class="qnote">הרשימה נשמרת לבד, אפשר להפסיק ולהמשיך מחר. בסוף מעבירים אותה ל־Google Sheets ולאתר המחסן.</p>
+    <div class="actions">
+      <button class="btn primary grow" type="button" id="copyTsv">העתקה ל־Google Sheets</button>
+      <button class="btn" type="button" id="dlCsv">הורדת קובץ לאתר המחסן</button>
+    </div>
+    <div id="copyBox"></div>
+    <div class="note">
+      <b>איך מעבירים</b>
+      <ul>
+        <li><b>ל־Google Sheets:</b> לוחצים "העתקה", פותחים גיליון ריק, עומדים על התא A1 ומדביקים.</li>
+        <li><b>לאתר המחסן:</b> מורידים את הקובץ, ובאתר לוחצים "ייבוא מ־Sheets" ובוחרים אותו. כל פריט נכנס עם המיקום שלו.</li>
+      </ul>
+    </div>
+    <button class="btn danger" type="button" id="reset">מחיקת כל הספירה והתחלה מחדש</button>
+  </section>
+
+  <div class="note">
+    <b>טיפים לתמונה שנקראת טוב</b>
+    <ul>
+      <li>מתקרבים, כך שהמדבקה ממלאת חלק גדול מהתמונה.</li>
+      <li>מחזיקים יציב רגע לפני הצילום. תמונה מטושטשת לא תיקרא.</li>
+      <li>אפשר כמה קופסאות בתמונה אחת, כל עוד המדבקות קריאות.</li>
+      <li>מותר לצלם ברצף: התמונות נקראות ברקע, לא צריך לחכות.</li>
+    </ul>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ---------- warehouse layout (same ids as the warehouse site) ---------- */
+const UNITS=[];
+for(let i=1;i<=14;i++)UNITS.push({id:`L-${String(i).padStart(2,'0')}`,levels:5,slots:4,g:'צד שמאל'});
+for(let i=1;i<=9;i++)UNITS.push({id:`R-${String(i).padStart(2,'0')}`,levels:5,slots:4,g:'צד ימין'});
+for(let i=1;i<=3;i++)UNITS.push({id:`B-0${i}`,levels:5,slots:4,g:'קיר אחורי'});
+UNITS.push({id:'M-01',levels:5,slots:4,g:'ארונות'},{id:'C-01',levels:4,slots:2,g:'ארונות'});
+const unitById=Object.fromEntries(UNITS.map(u=>[u.id,u]));
+const LETTERS='ABCD';
+const BRANDS={IVECO:'IVECO',DAF:'DAF',MAN:'MAN',HINO:'HINO',ISUZU:'ISUZU',JEEP:'JEEP',RAM:'RAM',GEN:'כללי'};
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const keyOf=sku=>String(sku).trim().toUpperCase().replace(/[^A-Z0-9_\-.~:@+]/g,'_').slice(0,150)||'_';
+const store={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}}};
+let toastT; function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600);}
+
+/* ---------- state ---------- */
+const saved=JSON.parse(store.get('countLoc')||'{}');
+const loc={unit:unitById[saved.unit]?saved.unit:'L-01',level:saved.level||1,slot:saved.slot||0};
+let rows=[], tab='here', db=null, sample=null, aiProblem=null;
+const queue=[]; let running=0, paused=false, photoSeq=0;
+const armed=new Set();
+const locStr=(u,l,s)=>`${u}-${l}-${LETTERS[s]}`;
+
+/* ---------- location bar ---------- */
+function renderLoc(){
+  const sel=$('unit');
+  if(!sel.options.length){
+    const groups={};UNITS.forEach(u=>(groups[u.g]??=[]).push(u));
+    sel.innerHTML=Object.entries(groups).map(([g,us])=>`<optgroup label="${g}">${us.map(u=>`<option value="${u.id}">${u.id}</option>`).join('')}</optgroup>`).join('');
+  }
+  const u=unitById[loc.unit]; sel.value=loc.unit;
+  loc.level=Math.min(loc.level,u.levels); loc.slot=Math.min(loc.slot,u.slots-1);
+  $('levels').innerHTML=Array.from({length:u.levels},(_,i)=>`<button type="button" data-level="${i+1}" aria-pressed="${loc.level===i+1}">${i+1}</button>`).join('');
+  $('slots').innerHTML=Array.from({length:u.slots},(_,i)=>`<button type="button" data-slot="${i}" aria-pressed="${loc.slot===i}">${LETTERS[i]}</button>`).join('');
+  $('locCode').textContent=locStr(loc.unit,loc.level,loc.slot);
+  store.set('countLoc',JSON.stringify(loc));
+  renderRows();
+}
+$('unit').addEventListener('change',e=>{loc.unit=e.target.value;renderLoc();});
+$('levels').addEventListener('click',e=>{const b=e.target.closest('button');if(b){loc.level=+b.dataset.level;renderLoc();}});
+$('slots').addEventListener('click',e=>{const b=e.target.closest('button');if(b){loc.slot=+b.dataset.slot;renderLoc();}});
+
+/* ---------- rows ---------- */
+function stats(){
+  $('stItems').textContent=new Set(rows.filter(r=>r.sku).map(r=>keyOf(r.sku))).size;
+  $('stUnits').textContent=rows.reduce((a,r)=>a+(+r.qty||0),0);
+  $('stQueue').textContent=queue.filter(q=>q.state==='wait'||q.state==='work').length;
+}
+function rowHTML(r){
+  const tags=[];
+  if(r.brand)tags.push(`<span class="tag b">${esc(BRANDS[r.brand]||r.brand)}</span>`);
+  if(r.maker&&r.maker.toUpperCase()!==(BRANDS[r.brand]||'').toUpperCase())tags.push(`<span class="tag">${esc(r.maker)}</span>`);
+  if(!r.sku)tags.push('<span class="tag x">מק״ט לא נקרא, הקלידו אותו</span>');
+  else if(r.flag==='low')tags.push('<span class="tag w">לא בטוח, בדקו את המק״ט</span>');
+  if(r.seen>1&&!r.manual)tags.push(`<span class="tag w">נראה ב־${r.seen} תמונות, בדקו את הכמות</span>`);
+  return `<div class="r${!r.sku?' unread':(r.flag==='low'||(r.seen>1&&!r.manual))?' flag':''}" data-id="${esc(r.id)}">
+    <div class="main">
+      <input class="sku" data-f="sku" value="${esc(r.sku)}" placeholder="מק״ט" aria-label="מק״ט" autocomplete="off" spellcheck="false">
+      <input class="nm" data-f="name" value="${esc(r.name)}" placeholder="שם הפריט" aria-label="שם הפריט">
+      <div class="meta">${tags.join('')}</div>
+    </div>
+    <div class="step"><button type="button" data-q="-1" aria-label="פחות">−</button><b>${r.qty}</b><button type="button" data-q="1" aria-label="יותר">+</button></div>
+    <button type="button" class="del${armed.has(r.id)?' armed':''}" data-del>${armed.has(r.id)?'לחצו שוב למחיקה':'מחיקה'}</button>
+  </div>`;
+}
+function renderRows(){
+  stats();
+  const here=locStr(loc.unit,loc.level,loc.slot);
+  const list=tab==='here'?rows.filter(r=>locStr(r.unit,r.level,r.slot)===here):[...rows].sort((a,b)=>locStr(a.unit,a.level,a.slot).localeCompare(locStr(b.unit,b.level,b.slot)));
+  $('listTitle').innerHTML=tab==='here'?`נספר ב־<span class="code">${here}</span> <small>${list.length} שורות</small>`:`כל הספירה <small>${list.length} שורות</small>`;
+  if(!list.length){$('rows').innerHTML=`<div class="empty">${tab==='here'?'עוד לא נספר כלום במיקום הזה. מצלמים מדבקה, והפריטים יופיעו כאן.':'הספירה עוד ריקה. בוחרים מדף למעלה ומתחילים לצלם.'}</div>`;return;}
+  let html='',last='';
+  for(const r of list){const l=locStr(r.unit,r.level,r.slot);if(tab==='all'&&l!==last){html+=`<div class="grp">${l}</div>`;last=l;}html+=rowHTML(r);}
+  if(document.activeElement?.matches?.('input[data-f]'))return; // don't redraw under someone typing
+  $('rows').innerHTML=html;
+}
+$('tabHere').onclick=()=>{tab='here';$('tabHere').setAttribute('aria-pressed','true');$('tabAll').setAttribute('aria-pressed','false');renderRows();};
+$('tabAll').onclick=()=>{tab='all';$('tabAll').setAttribute('aria-pressed','true');$('tabHere').setAttribute('aria-pressed','false');renderRows();};
+
+const rowById=id=>rows.find(r=>r.id===id);
+$('rows').addEventListener('click',async e=>{
+  const card=e.target.closest('.r'); if(!card)return; const r=rowById(card.dataset.id); if(!r)return;
+  const q=e.target.closest('[data-q]');
+  if(q){const n=Math.max(0,(+r.qty||0)+(+q.dataset.q)); r.qty=n; card.querySelector('.step b').textContent=n; stats(); save(r.id,{qty:n,manual:true}); return;}
+  if(e.target.closest('[data-del]')){
+    if(!armed.has(r.id)){armed.add(r.id);e.target.textContent='לחצו שוב למחיקה';e.target.classList.add('armed');return;}
+    armed.delete(r.id); try{await db.collection('count').doc(r.id).delete();}catch(err){failed(err);}
+  }
+});
+$('rows').addEventListener('change',e=>{
+  const inp=e.target.closest('input[data-f]'); if(!inp)return; const card=inp.closest('.r'); const r=rowById(card.dataset.id); if(!r)return;
+  const v=inp.value.trim(); if(inp.dataset.f==='sku')rekey(r,v); else save(r.id,{name:v});
+});
+// typing a SKU for an unread row: the row moves to its proper id so later photos merge into it
+async function rekey(r,sku){
+  const id=docId(sku,r.unit,r.level,r.slot);
+  if(id===r.id){save(r.id,{sku,flag:''});return;}
+  const other=rowById(id);
+  try{
+    if(other)await db.collection('count').doc(id).update({qty:(+other.qty||0)+(+r.qty||0),manual:true});
+    else await db.collection('count').doc(id).set({...strip(r),sku,flag:'',manual:true,t:Date.now()});
+    await db.collection('count').doc(r.id).delete();
+  }catch(err){failed(err);}
+}
+const strip=r=>({sku:r.sku,name:r.name,brand:r.brand,maker:r.maker,unit:r.unit,level:r.level,slot:r.slot,qty:+r.qty||0,seen:r.seen||1,manual:!!r.manual,flag:r.flag||'',t:r.t||Date.now()});
+const docId=(sku,u,l,s)=>sku?`${keyOf(sku)}@${u}-${l}-${LETTERS[s]}`:`U${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}@${u}-${l}-${LETTERS[s]}`;
+const writing=new Map(); // one write at a time per document
+async function save(id,patch){
+  const prev=writing.get(id)||Promise.resolve();
+  const next=prev.then(()=>db.collection('count').doc(id).update({...patch,t:Date.now()})).catch(failed);
+  writing.set(id,next); await next;
+}
+$('addManual').onclick=async()=>{
+  try{await db.collection('count').doc(docId('',loc.unit,loc.level,loc.slot)).set({sku:'',name:'',brand:'GEN',maker:'',unit:loc.unit,level:loc.level,slot:loc.slot,qty:1,seen:1,manual:true,flag:'',t:Date.now()});toast('נוספה שורה. הקלידו את המק״ט.');}
+  catch(err){failed(err);}
+};
+function failed(err){console.error(err);toast(err?.code==='invalid_argument'?'אין הרשאה לשמור.':'השמירה נכשלה. בדקו את החיבור.');}
+
+/* ---------- reading photos ---------- */
+const PROMPT=`You are reading the labels of spare-part boxes and packages on a shelf in a truck and 4x4 garage warehouse in Israel (brands like IVECO, DAF, MAN, HINO, ISUZU, JEEP, RAM, and aftermarket makers like MANN-FILTER, BOSCH, SACHS, FEBI, KNORR).
+For every DISTINCT part whose label you can see, return one object:
+- "sku": the part number exactly as printed (keep digits, letters, spaces and dashes). Prefer the number marked Part No / Art.-Nr. / Ref / OE / מק"ט. Do not use the EAN barcode digits unless no other number exists.
+- "name": a short Hebrew name of the part (for example "מסנן שמן", "רפידות בלם", "חיישן ABS"). Translate from English or German if needed.
+- "brand": the vehicle brand the part belongs to, one of IVECO, DAF, MAN, HINO, ISUZU, JEEP, RAM; use "GEN" for general or aftermarket parts when no vehicle brand is clear.
+- "maker": the brand printed on the box (for example "MANN-FILTER", "IVECO", "BOSCH"), or "".
+- "qty": how many identical boxes of this part are visible in the photo (at least 1).
+- "confidence": "high" if you read the part number clearly, "low" if any character is a guess.
+If a label is visible but its part number cannot be read, still return an object with "sku": "" and a "name" describing the item.
+Reply with ONLY a JSON array, for example:
+[{"sku":"W 950/26","name":"מסנן שמן","brand":"GEN","maker":"MANN-FILTER","qty":2,"confidence":"high"}]
+Reply [] if there are no part labels in the photo.`;
+
+function addPhotos(files){
+  if(!files?.length)return;
+  if(!db){toast('אין חיבור לשמירת הספירה. פתחו את העמוד מחדש.');return;}
+  for(const f of files){
+    queue.push({id:++photoSeq,file:f,url:URL.createObjectURL(f),state:'wait',loc:{...loc},found:0});
+  }
+  renderQueue(); pump();
+}
+$('cam').addEventListener('change',e=>{addPhotos([...e.target.files]);e.target.value='';});
+$('gal').addEventListener('change',e=>{addPhotos([...e.target.files]);e.target.value='';});
+
+function renderQueue(){
+  const shown=queue.slice(-30);
+  $('queue').innerHTML=shown.map(q=>`<div class="ph ${q.state}" title="${q.state==='err'?'לא נקרא. לחצו לנסות שוב':''}"><img src="${q.url}" alt=""><i>${q.state==='wait'?'…':q.state==='work'?'קורא':q.state==='done'?q.found:'!'}</i>${q.state==='err'?`<button type="button" data-retry="${q.id}" aria-label="נסה שוב"></button>`:''}</div>`).join('');
+  const waiting=queue.filter(q=>q.state==='wait'||q.state==='work').length;
+  let s='';
+  if(aiProblem==='unavailable')s=`<div class="note err">קריאת התמונות לא זמינה בתצוגה הזו. אפשר להמשיך עם "הוספה ידנית". הכי טוב לפתוח את העמוד מאפליקציית Claude או מ־claude.ai.</div>`;
+  else if(aiProblem==='not_granted')s=`<div class="note err">לא אושר לעמוד להשתמש ב־Claude לקריאת התמונות. רעננו את העמוד ואשרו כשתופיע השאלה.</div>`;
+  else if(paused)s=`<div class="note err">הגעתם למכסת השימוש של Claude לעכשיו. התמונות שבתור מחכות. <button class="btn" type="button" id="resume">להמשיך לקרוא</button></div>`;
+  else if(waiting)s=`<p class="qnote">קורא ${waiting} תמונות ברקע. אפשר להמשיך לצלם. לא סוגרים את העמוד עד שהתור מתרוקן.</p>`;
+  $('status').innerHTML=s;
+  stats();
+}
+$('queue').addEventListener('click',e=>{const b=e.target.closest('[data-retry]');if(!b)return;const q=queue.find(x=>x.id===+b.dataset.retry);if(q){q.state='wait';renderQueue();pump();}});
+$('status').addEventListener('click',e=>{if(e.target.id==='resume'){paused=false;renderQueue();pump();}});
+
+function pump(){
+  while(!paused&&!aiProblem&&running<2){
+    const q=queue.find(x=>x.state==='wait'); if(!q)break;
+    running++; q.state='work'; renderQueue();
+    readPhoto(q).finally(()=>{running--;renderQueue();pump();});
+  }
+}
+async function readPhoto(q){
+  if(!sample){q.state='err';aiProblem='unavailable';return;}
+  try{
+    const res=await sample.json(PROMPT,{images:[q.file],modelTier:'default'});
+    const list=Array.isArray(res)?res:[];
+    q.found=list.length; q.state='done';
+    for(const it of list)await merge(it,q.loc);
+    if(!list.length)toast('לא נמצאה מדבקה בתמונה');
+  }catch(e){
+    q.state='err';
+    if(e.code==='rate_limited'){q.state='wait';paused=true;}
+    else if(e.code==='not_granted')aiProblem='not_granted';
+    else if(['images_unavailable','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e.code))aiProblem='unavailable';
+    else if(e.code==='image_rejected')toast('התמונה לא נתמכת. נסו לצלם שוב.');
+    else toast('תמונה אחת לא נקראה. לחצו עליה כדי לנסות שוב.');
+  }
+}
+// merges run one after another and update the local list right away, so two photos read at once never overwrite each other
+let mergeChain=Promise.resolve();
+function merge(it,where){const run=mergeChain.then(()=>mergeOne(it,where));mergeChain=run.catch(()=>{});return run;}
+async function mergeOne(it,where){
+  const sku=String(it.sku||'').trim().slice(0,60);
+  const qty=Math.max(1,Math.round(+it.qty||1));
+  const brand=BRANDS[it.brand]?it.brand:'GEN';
+  const base={sku,name:String(it.name||'').slice(0,80),brand,maker:String(it.maker||'').slice(0,40),unit:where.unit,level:where.level,slot:where.slot,flag:it.confidence==='low'?'low':''};
+  const id=docId(sku,where.unit,where.level,where.slot);
+  const ex=sku&&rowById(id);
+  try{
+    if(ex){
+      // the same part in another photo of the same spot is usually the same boxes again, so keep the larger count and flag it
+      const patch={seen:(ex.seen||1)+1,qty:ex.manual?ex.qty:Math.max(+ex.qty||0,qty),t:Date.now(),...(ex.name?{}:{name:base.name})};
+      Object.assign(ex,patch); await db.collection('count').doc(id).update(patch);
+    }else{
+      const doc={...base,qty,seen:1,manual:false,t:Date.now()};
+      rows.push({id,...doc}); await db.collection('count').doc(id).set(doc);
+    }
+  }catch(err){failed(err);}
+}
+
+/* ---------- export ---------- */
+function exportRows(){
+  return [...rows].filter(r=>r.sku).sort((a,b)=>locStr(a.unit,a.level,a.slot).localeCompare(locStr(b.unit,b.level,b.slot)));
+}
+const HEAD=['מק"ט','שם','יצרן','מיקום','כמות','יצרן על האריזה'];
+const vals=r=>[r.sku,r.name,BRANDS[r.brand]||'כללי',locStr(r.unit,r.level,r.slot),+r.qty||0,r.maker||''];
+$('copyTsv').onclick=()=>{
+  const list=exportRows(); if(!list.length){toast('אין עדיין שורות עם מק״ט');return;}
+  const clean=v=>String(v).replace(/[\t\n\r]/g,' ');
+  const tsv=[HEAD,...list.map(vals)].map(r=>r.map(clean).join('\t')).join('\n');
+  const done=()=>toast(`הועתקו ${list.length} שורות. הדביקו בתא A1 בגיליון.`);
+  const fallback=()=>{$('copyBox').innerHTML='<p class="qnote">ההעתקה האוטומטית לא עבדה כאן. סמנו את הטקסט ידנית והעתיקו:</p><textarea class="cp" id="cpText" readonly></textarea>';const t=$('cpText');t.value=tsv;t.focus();t.select();};
+  try{navigator.clipboard.writeText(tsv).then(done,fallback);}catch{fallback();}
+};
+$('dlCsv').onclick=async()=>{
+  const list=exportRows(); if(!list.length){toast('אין עדיין שורות עם מק״ט');return;}
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const csv='﻿'+[HEAD,...list.map(vals)].map(r=>r.map(q).join(',')).join('\r\n');
+  const dl=await window.claude?.use?.('downloads');
+  if(!dl){toast('ההורדה לא זמינה כאן. השתמשו ב"העתקה ל־Google Sheets".');return;}
+  try{await dl.save({filename:`counting-${new Date().toISOString().slice(0,10)}.csv`,data:csv});}
+  catch(e){if(e?.code!=='declined')toast('ההורדה לא הצליחה. השתמשו ב"העתקה ל־Google Sheets".');}
+};
+let resetArmed=false;
+$('reset').onclick=async()=>{
+  const b=$('reset');
+  if(!resetArmed){resetArmed=true;b.classList.add('armed');b.textContent=`לחצו שוב כדי למחוק ${rows.length} שורות`;return;}
+  resetArmed=false;b.classList.remove('armed');b.disabled=true;b.textContent='מוחק…';
+  try{for(const r of [...rows])await db.collection('count').doc(r.id).delete();toast('הספירה נמחקה');}catch(err){failed(err);}
+  b.disabled=false;b.textContent='מחיקת כל הספירה והתחלה מחדש';
+};
+
+/* ---------- boot ---------- */
+renderLoc(); renderQueue();
+(async()=>{
+  const cl=window.claude;
+  if(!cl?.use){aiProblem='unavailable';$('status').innerHTML='<div class="note err">העמוד צריך להיפתח מתוך Claude (האפליקציה או claude.ai) כדי לשמור את הספירה ולקרוא תמונות.</div>';return;}
+  [db,sample]=await Promise.all([cl.use('db'),cl.use('sample')]);
+  if(sample){const lim=await sample.limits().catch(()=>null);if(!lim?.images){sample=null;}}
+  if(!sample)aiProblem='unavailable';
+  renderQueue();
+  if(!db){$('status').innerHTML='<div class="note err">אין חיבור לשמירת הספירה. התחברו לחשבון Claude ופתחו את העמוד מחדש.</div>';return;}
+  db.collection('count').onSnapshot(snap=>{
+    rows=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderRows();
+  },err=>{console.error(err);$('status').innerHTML='<div class="note err">החיבור לשמירת הספירה נותק. רעננו את העמוד.</div>';});
+})();
+</script>
