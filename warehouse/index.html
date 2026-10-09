@@ -1,20 +1,22 @@
 <!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0">
-<title>מפת המחסן</title>
+<title>מחסן מטיילי עירון</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-/* Layout: full-bleed 3D warehouse; search bar floats on top, catalog panel docks to the right (bottom sheet on phones). Single committed dark "night shift" look. */
+/* Layout: full-bleed 3D warehouse; header + search float on top, catalog panel docks right (bottom sheet on phones). One committed dark "night shift" look, yellow from the steel beams. */
 :root{
-  --ground:#121416;      /* concrete at night */
+  --ground:#121416;
   --panel:#1a1d20;
   --panel-2:#22262a;
   --line:#30363b;
   --ink:#ece8df;
   --muted:#9aa2a9;
-  --hazard:#f5c518;      /* the yellow steel beams */
+  --hazard:#f5c518;
   --hazard-ink:#1a1500;
-  --bin:#2f5bd3;
+  --ok:#4cc38a;
+  --warn:#f0a43a;
+  --bad:#ef5b5b;
   --f-display:'Karantina','IBM Plex Sans Hebrew',system-ui,sans-serif;
   --f-body:'IBM Plex Sans Hebrew',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
   --f-code:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
@@ -24,8 +26,9 @@ html,body{height:100%}
 [hidden]{display:none!important}
 body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;overflow:hidden}
 *{box-sizing:border-box}
-button,input{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
 :focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .code{font-family:var(--f-code);direction:ltr;unicode-bidi:isolate;letter-spacing:.02em}
@@ -33,33 +36,55 @@ button{cursor:pointer}
 #app{position:relative;height:100%;overflow:hidden}
 #scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
-.bar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:14px 16px 10px;background:linear-gradient(var(--ground) 40%,transparent);pointer-events:none}
+.bar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:14px 16px 10px;background:linear-gradient(var(--ground) 45%,transparent);pointer-events:none}
 .bar>*{pointer-events:auto}
 .title{display:flex;align-items:center;gap:12px;min-width:0}
-.mark{width:34px;height:34px;flex:none;border-radius:4px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 7px,#111 7px 14px)}
-.title h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:38px;line-height:.9;letter-spacing:.01em}
-.title p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
-.search{flex:1 1 340px;display:flex;max-width:620px;margin-inline-start:auto;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.mark{width:36px;height:36px;flex:none;border-radius:5px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 7px,#111 7px 14px);box-shadow:inset 0 0 0 2px #111}
+.title h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:40px;line-height:.85;letter-spacing:.01em;white-space:nowrap}
+.title p{margin:3px 0 0;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.search{flex:1 1 320px;display:flex;max-width:600px;margin-inline-start:auto;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
 .search:focus-within{border-color:var(--hazard)}
 .search input{flex:1;min-width:0;border:0;background:transparent;padding:13px 14px;font-size:17px;outline:none}
 .search input::placeholder{color:var(--muted)}
 .search button{border:0;background:var(--hazard);color:var(--hazard-ink);font-weight:600;padding:0 22px;font-size:16px}
+.me{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 4px;min-width:0}
+.me img{width:30px;height:30px;border-radius:50%;flex:none;background:var(--panel-2)}
+.me b{display:block;font-weight:500;font-size:13.5px;line-height:1.1;white-space:nowrap}
+.me span{display:block;font-size:11.5px;color:var(--muted);line-height:1.2;white-space:nowrap}
 
-.chips{position:absolute;top:var(--chips-top,78px);right:16px;left:16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.chips{position:absolute;top:var(--chips-top,80px);right:16px;left:16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);font-size:13px;font-weight:500;letter-spacing:.04em}
 .chip i{width:9px;height:9px;border-radius:2px;background:var(--c)}
 .chip small{color:var(--muted);font-family:var(--f-code);font-size:11px}
 .chip[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 22%,var(--panel))}
 
-.panel{position:absolute;top:var(--panel-top,130px);right:16px;bottom:16px;width:min(390px,calc(100% - 32px));display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.panel{position:absolute;top:var(--panel-top,130px);right:16px;bottom:16px;width:min(400px,calc(100% - 32px));display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .panel-body{overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px}
 .handle{display:none}
-.eyebrow{font-size:11.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:0 0 8px}
-.panel h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1;text-wrap:balance}
-.panel h3{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;color:var(--muted);margin:0 0 6px}
+.panel h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:36px;line-height:1;text-wrap:balance}
+.panel h3{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em;display:flex;justify-content:space-between;align-items:baseline}
+.panel h3 button{border:0;background:none;color:var(--hazard);font-size:12.5px;padding:0}
 .lead{margin:6px 0 0;color:var(--muted)}
-.demo{border:1px dashed color-mix(in srgb,var(--hazard) 55%,transparent);color:color-mix(in srgb,var(--hazard) 85%,var(--ink));border-radius:10px;padding:10px 12px;font-size:13px}
+.note{border:1px dashed color-mix(in srgb,var(--hazard) 55%,transparent);color:color-mix(in srgb,var(--hazard) 85%,var(--ink));border-radius:10px;padding:10px 12px;font-size:13px;display:flex;flex-direction:column;gap:8px}
+.note.err{border-color:color-mix(in srgb,var(--bad) 60%,transparent);color:color-mix(in srgb,var(--bad) 70%,var(--ink))}
+
+.btn{border:1px solid var(--line);background:var(--panel-2);border-radius:9px;padding:9px 14px;font-weight:500}
+.btn:hover:not(:disabled){border-color:var(--hazard)}
+.btn.primary{background:var(--hazard);color:var(--hazard-ink);border-color:var(--hazard);font-weight:600}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.btn.danger.armed{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn.small{padding:5px 10px;font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions .grow{flex:1}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:10px;text-align:start;display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--f-code);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted)}
+.stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
+button.stat:hover{border-color:var(--hazard)}
 
 .try{display:flex;flex-wrap:wrap;gap:6px}
 .try button{border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:6px 10px;font-family:var(--f-code);font-size:13px;direction:ltr}
@@ -69,11 +94,13 @@ button{cursor:pointer}
 .key div{background:var(--panel-2);border-radius:8px;padding:8px 4px}
 .key b{display:block;font-family:var(--f-code);font-size:18px;color:var(--hazard)}
 .key span{font-size:11.5px;color:var(--muted);direction:rtl;display:block}
+.small-muted{font-size:12.5px;color:var(--muted);margin:8px 0 0}
 
 .zones{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.zone{display:flex;align-items:center;gap:8px;text-align:start;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:8px 10px;font-size:13px}
+.zone{display:flex;align-items:center;gap:8px;text-align:start;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0}
 .zone i{width:10px;height:10px;border-radius:2px;background:var(--c);flex:none}
 .zone .code{margin-inline-start:auto;color:var(--muted);font-size:12px}
+.zone:hover{border-color:var(--hazard)}
 
 .results{display:flex;flex-direction:column;gap:6px}
 .row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;text-align:start;border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:10px 12px}
@@ -82,8 +109,12 @@ button{cursor:pointer}
 .row .nm{min-width:0}
 .row .nm b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .nm .code{font-size:12.5px;color:var(--muted)}
+.row .end{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 .row .loc{font-family:var(--f-code);font-size:13px;color:var(--hazard);direction:ltr}
-.empty{color:var(--muted)}
+.q{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.q.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.q.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.q.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
 
 .card{border:1.5px solid var(--hazard);border-radius:12px;padding:14px;background:color-mix(in srgb,var(--hazard) 7%,var(--panel-2));display:flex;flex-direction:column;gap:10px}
 .card-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -92,9 +123,17 @@ button{cursor:pointer}
 .card .name{font-size:17px}
 .bigloc{display:flex;align-items:stretch;gap:8px}
 .bigloc .code{flex:1;background:var(--hazard);color:var(--hazard-ink);font-size:30px;font-weight:600;border-radius:8px;padding:6px 12px;text-align:center}
+.bigloc .code.none{background:var(--panel);color:var(--muted);font-size:15px;font-family:var(--f-body);padding:12px;direction:rtl}
 .bigloc button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:0 12px;font-size:13px}
-.facts{display:flex;gap:16px;color:var(--muted);font-size:13px;flex-wrap:wrap}
+.facts{display:flex;gap:6px 16px;color:var(--muted);font-size:13px;flex-wrap:wrap}
 .facts b{color:var(--ink);font-family:var(--f-code);font-weight:500}
+.qtyrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+.stepper button{border:0;background:none;width:42px;height:40px;font-size:20px}
+.stepper button:hover{background:var(--panel-2)}
+.stepper input{width:64px;text-align:center;border:0;background:none;font-family:var(--f-code);font-size:18px;font-weight:600;outline:none;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button{-webkit-appearance:none}
+.meta{font-size:12.5px;color:var(--muted)}
 
 .shelf{display:flex;flex-direction:column;gap:5px}
 .lvl{display:grid;grid-template-columns:52px 1fr;gap:6px;align-items:stretch}
@@ -113,10 +152,39 @@ button{cursor:pointer}
 .back{align-self:flex-start;border:0;background:none;color:var(--muted);padding:0;font-size:13px}
 .back:hover{color:var(--ink)}
 
+.form{display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.field>.lab{font-size:13px;font-weight:600;color:var(--muted)}
+.field input[type=text],.field select,.field textarea{background:var(--panel-2);border:1.5px solid var(--line);border-radius:9px;padding:10px 12px;font-size:16px;outline:none;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--hazard)}
+.field input[readonly]{opacity:.7}
+.field textarea{min-height:60px;resize:vertical}
+.seg{display:flex;flex-wrap:wrap;gap:5px}
+.seg button{min-width:42px;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:7px 10px;font-family:var(--f-code);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--hazard);color:var(--hazard-ink);border-color:var(--hazard);font-weight:600}
+.seg.brands button{font-family:var(--f-body);font-size:13px;font-weight:500;display:inline-flex;gap:6px;align-items:center}
+.seg.brands button i{width:9px;height:9px;border-radius:2px;background:var(--c)}
+.seg.brands button[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 30%,var(--panel-2));color:var(--ink);border-color:var(--c)}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.ferr{color:var(--bad);font-size:13px;margin:0}
+.preview{display:flex;align-items:center;gap:10px;background:var(--panel-2);border-radius:9px;padding:10px 12px}
+.preview .code{font-size:22px;font-weight:600;color:var(--hazard)}
+
+.log{display:flex;flex-direction:column}
+.log-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.log-row:last-child{border-bottom:0}
+.log-row img{width:24px;height:24px;border-radius:50%;background:var(--panel-2)}
+.log-row .what{min-width:0}
+.log-row .what .code{color:var(--ink)}
+.log-row .what small{display:block;color:var(--muted);font-size:12px}
+.log-row time{color:var(--muted);font-size:12px;white-space:nowrap}
+.act{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:0 6px;margin-inline-end:6px;background:var(--panel-2);color:var(--muted)}
+.act.add{color:var(--ok)} .act.move{color:var(--hazard)} .act.qty{color:#7fb2ff} .act.del{color:var(--bad)}
+
 .views{position:absolute;left:16px;bottom:16px;display:flex;gap:6px}
 .views button{border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 90%,transparent);border-radius:8px;padding:8px 12px;font-size:13px}
 .views button:hover{border-color:var(--hazard)}
-.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:9px 16px;border-radius:8px;font-size:13.5px;font-weight:500;z-index:5;max-width:calc(100% - 32px)}
 .loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
 
 @media (max-width:760px){
@@ -124,11 +192,13 @@ button{cursor:pointer}
   .title h1{font-size:30px}
   .title p{display:none}
   .mark{width:26px;height:26px}
-  .search{flex-basis:100%;margin:0}
+  .me{padding:3px;margin-inline-start:auto}
+  .me>div{display:none}
+  .search{flex-basis:100%;margin:0;order:3}
   .search input{padding:11px 12px}
-  .panel{top:auto;right:0;left:0;bottom:0;width:100%;max-height:52%;border-radius:16px 16px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .panel{top:auto;right:0;left:0;bottom:0;width:100%;max-height:56%;border-radius:16px 16px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom,0px)}
   .panel.min .panel-body{display:none}
-  .handle{display:flex;justify-content:center;align-items:center;gap:8px;border:0;background:none;padding:8px;color:var(--muted);font-size:12px}
+  .handle{display:flex;justify-content:center;align-items:center;border:0;background:none;padding:9px}
   .handle::before{content:"";width:40px;height:4px;border-radius:2px;background:var(--line)}
   .views{left:auto;right:16px;bottom:auto;top:var(--views-top,150px);flex-direction:column}
   .views button{padding:6px 10px;font-size:12px}
@@ -137,25 +207,26 @@ button{cursor:pointer}
 </style>
 
 <div id="app">
-  <canvas id="scene" aria-label="מודל תלת־ממד של המחסן"></canvas>
+  <canvas id="scene" aria-label="מודל תלת־ממד של מחסן מטיילי עירון"></canvas>
   <div class="loading" id="loading">טוען את המחסן…</div>
 
   <header class="bar" id="bar">
     <div class="title">
       <div class="mark" aria-hidden="true"></div>
-      <div><h1>מפת המחסן</h1><p>איתור חלקים לפי מק״ט · משאיות ורכבי שטח</p></div>
+      <div><h1>מטיילי עירון</h1><p>מחסן חלקים · איתור לפי מק״ט</p></div>
     </div>
     <form class="search" id="searchForm" role="search">
       <label class="sr" for="q">חיפוש לפי מק״ט או שם פריט</label>
-      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="הקלד מק״ט או שם פריט">
+      <input id="q" type="search" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="הקלד מק״ט או שם פריט">
       <button type="submit">אתר</button>
     </form>
+    <div class="me" id="me" hidden><img id="meAvatar" alt=""><div><b id="meName"></b><span id="meRole"></span></div></div>
   </header>
 
   <nav class="chips" id="chips" aria-label="סינון לפי יצרן"></nav>
 
   <aside class="panel" id="panel">
-    <button class="handle" id="handle" type="button" aria-label="הצג או הסתר פרטים"></button>
+    <button class="handle" id="handle" type="button" aria-label="הצג או הסתר את הלוח"></button>
     <div class="panel-body" id="panelBody"></div>
   </aside>
 
@@ -163,7 +234,7 @@ button{cursor:pointer}
     <button type="button" id="vOver">מבט על</button>
     <button type="button" id="vDoor">מהכניסה</button>
   </div>
-  <div class="toast" id="toast" hidden></div>
+  <div class="toast" id="toast" role="status" hidden></div>
 </div>
 
 <script type="importmap">
@@ -173,71 +244,68 @@ button{cursor:pointer}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-/* ---------- Brands ---------- */
-const BRANDS = {
-  IVECO:{label:'IVECO', c:'#4c8dff'},
-  DAF:  {label:'DAF',   c:'#e5484d'},
-  MAN:  {label:'MAN',   c:'#cfd6de'},
-  HINO: {label:'HINO',  c:'#ff8a3d'},
-  ISUZU:{label:'ISUZU', c:'#2ec4b6'},
-  JEEP: {label:'JEEP',  c:'#7bc96f'},
-  RAM:  {label:'RAM',   c:'#b48cff'},
-  GEN:  {label:'כללי',  c:'#c49a62'},
+/* =========================================================
+   Brands
+   ========================================================= */
+const BRANDS={
+  IVECO:{label:'IVECO',c:'#4c8dff'}, DAF:{label:'DAF',c:'#e5484d'}, MAN:{label:'MAN',c:'#cfd6de'},
+  HINO:{label:'HINO',c:'#ff8a3d'}, ISUZU:{label:'ISUZU',c:'#2ec4b6'}, JEEP:{label:'JEEP',c:'#7bc96f'},
+  RAM:{label:'RAM',c:'#b48cff'}, GEN:{label:'כללי',c:'#c49a62'},
 };
+const LETTERS='ABCD';
 
-/* ---------- Warehouse layout (estimated, to be corrected) ---------- */
-const RL=3.0, UD=0.5, AISLE=1.8, SIDE_AISLE=1.4, START=1.6, ROWS=4, PITCH=2*UD+SIDE_AISLE;
-const SIDE_HE={L:'צד שמאל',R:'צד ימין',B:'קיר אחורי',M:'ארון מגירות'};
+/* =========================================================
+   Warehouse layout. Change this block when the real layout arrives.
+   Rows stand across the warehouse, two racks back to back:
+   odd number faces the entrance, the even one after it is the back of the same row.
+   ========================================================= */
+const ROWS=4, RL=3.0, RD=0.5, AISLE=1.8, SIDE_AISLE=1.4, START=1.6, PITCH=2*RD+SIDE_AISLE;
+const RACK_LEVELS=[0.12,0.6,1.08,1.56,2.04];
+const BIN_RACKS={'L-01':[4,5],'L-02':[4,5]};
 const units=[];
-const metalLevels=[0.1,0.58,1.06,1.54,2.02];
-// Rows stand across the warehouse, two shelves back to back; odd number faces the entrance, even is its back side.
 for(let r=0;r<ROWS;r++){
-  const zc=-(START+UD+r*PITCH);
+  const zc=-(START+RD+r*PITCH);
   for(const side of ['L','R']){
     const x=(side==='L'?-1:1)*(AISLE/2+RL/2);
-    [[0,zc+UD/2],[Math.PI,zc-UD/2]].forEach(([rot,z],f)=>{
-      const n=String(r*2+f+1).padStart(2,'0');
-      units.push({id:`${side}-${n}`,side,row:r+1,face:f,type:'metal',x,z,rot,w:RL,d:UD,h:2.4,levels:metalLevels,slots:4,flip:(side==='L')===(f===0)});
+    [[0,zc+RD/2],[Math.PI,zc-RD/2]].forEach(([rot,z],f)=>{
+      const id=`${side}-${String(r*2+f+1).padStart(2,'0')}`;
+      units.push({id,side,row:r+1,face:f,type:'rack',x,z,rot,w:RL,d:RD,h:2.45,levels:RACK_LEVELS,slots:4,binLevels:BIN_RACKS[id]||[],flip:(side==='L')===(f===0)});
     });
   }
 }
 const backZ=-(START+ROWS*PITCH)-0.9;
-[-1.95,0,1.95].forEach((x,i)=>units.push({id:`B-0${i+1}`,side:'B',type:'bins',x,z:backZ,rot:0,w:1.8,d:0.6,h:2.1,levels:[0.1,0.5,0.9,1.3,1.7],slots:4}));
+[-1.95,0,1.95].forEach((x,i)=>units.push({id:`B-0${i+1}`,side:'B',type:'rack',x,z:backZ,rot:0,w:1.8,d:0.6,h:2.15,levels:[0.1,0.5,0.9,1.3,1.7],slots:4,binLevels:[1,2,3,4,5]}));
 units.push({id:'M-01',side:'M',type:'drawers',x:-(AISLE/2+0.225),z:-0.6,rot:Math.PI/2,w:0.9,d:0.45,h:1.6,levels:[0.55,0.76,0.97,1.18,1.39],slots:4});
+units.push({id:'C-01',side:'C',type:'cabinet',x:(AISLE/2+0.25),z:-0.75,rot:-Math.PI/2,w:1.0,d:0.5,h:2.0,levels:[0.08,0.55,1.02,1.49],slots:2});
 const unitById=Object.fromEntries(units.map(u=>[u.id,u]));
+const SIDE_HE={L:'צד שמאל',R:'צד ימין',B:'קיר אחורי',M:'ארון מגירות',C:'ארון בכניסה מימין'};
+const where=u=>u.row?`${SIDE_HE[u.side]} · שורה ${u.row} · ${u.face?'גב השורה':'פונה לכניסה'}`:SIDE_HE[u.side];
+const WALL_X=AISLE/2+RL+0.45;
 
-/* ---------- Demo catalog ---------- */
-const GROUPS=[
- {b:'GEN',u:['L-01','L-02'],items:[['GEN-OIL-1540','שמן מנוע 15W-40 · 20 ליטר',12],['GEN-COOL-G12','נוזל קירור G12 · 5 ליטר',9],['GEN-DOT4','נוזל בלמים DOT4',14],['GEN-GRS-400','גריז ליתיום · שפופרת',20],['GEN-ATF-3','שמן גיר ATF',8],['GEN-ADB-10','AdBlue · 10 ליטר',10],['GEN-WD40','WD-40 ספריי',15],['GEN-CLN-BRK','מנקה בלמים ספריי',24]]},
- {b:'IVECO',u:['L-03','L-04'],items:[['5801592275','מסנן שמן',14],['2997305','מסנן סולר',9],['504209107','מסנן אוויר',6],['5801415504','רפידות בלם קדמיות',8],['42555508','דיסק בלם קדמי',4],['504047496','משאבת מים',2],['5801500178','רצועת מנוע',7],['41211196','פנס אחורי שמאל',3],['504130460','חיישן לחץ שמן',5],['5801426862','בולם זעזועים אחורי',4],['500054655','מסנן מייבש אוויר',6],['42548178','ממסר מצתים',10]]},
- {b:'DAF',u:['L-05','L-06'],items:[['1643070','מסנן שמן',12],['1397766','מסנן סולר',10],['1638061','מסנן אוויר',5],['1934398','רפידות בלם',6],['1640797','חיישן ABS',4],['1405418','מגב שמשה',8],['1694385','רצועת אלטרנטור',5],['2131553','מראה צד ימין',2],['1676355','מתג חלון חשמלי',3],['1928868','מסנן מייבש אוויר',4],['2022165','חיישן טמפרטורה',6]]},
- {b:'MAN',u:['L-07','L-08'],items:[['51055017160','מסנן שמן',11],['51125030061','מסנן סולר',9],['81084050020','מסנן אוויר',4],['CU 32 001','מסנן מזגן MANN',7],['81508206087','רפידות בלם',6],['51065006069','משאבת מים',2],['81259016094','חיישן ABS',3],['51958010303','רצועת מנוע',5]]},
- {b:'HINO',u:['R-01','R-02'],items:[['15607-2190','מסנן שמן',15],['23390-E0020','מסנן סולר',12],['17801-E0010','מסנן אוויר',6],['04495-E0110','רפידות בלם קדמיות',7],['16100-E0373','משאבת מים',2],['81550-E0010','פנס אחורי',3],['S1561-72220','רצועת מנוע',6],['89422-E0010','חיישן טמפרטורה',5],['48510-E0080','בולם זעזועים',4]]},
- {b:'ISUZU',u:['R-03','R-04'],items:[['8-98018858-0','מסנן שמן',13],['8-98159693-0','מסנן סולר',10],['8-98140266-0','מסנן אוויר',5],['8-97367601-0','רפידות בלם',8],['8-97945185-0','חיישן מהירות',3],['8-97602049-0','משאבת מים',2],['8-98092301-0','רצועת מנוע',6],['8-98005556-0','מראה צד',2],['8-97328581-0','ממסר התנעה',4]]},
- {b:'JEEP',u:['R-05'],items:[['68191349AA','מסנן שמן',18],['68257030AA','מסנן אוויר',7],['68144219AA','רפידות בלם קדמיות',6],['68079487AA','מסנן מזגן',9],['68225170AA','מצתים',16],['68100436AA','משאבת מים',2],['68376010AA','חיישן לחץ צמיגים',8]]},
- {b:'RAM',u:['R-06'],items:[['68507598AA','מסנן שמן',10],['68233626AA','מסנן אוויר',5],['68052370AA','רפידות בלם',6],['68436216AA','מסנן סולר',7],['68283391AA','רצועת מנוע',4],['68193834AA','בולם זעזועים',4],['68170049AA','מגב שמשה',8]]},
- {b:'GEN',u:['R-07','R-08'],items:[['GEN-HOSE-13','צינור לחץ 13 מ״מ · גליל',3],['GEN-HOSE-19','צינור מים 19 מ״מ · גליל',2],['GEN-BAT-100','מצבר 12V 100Ah',3],['GEN-WIRE-25','כבל חשמל 2.5 ממ״ר · גליל',4],['GEN-TIE-300','אזיקונים 300 מ״מ · שקית',30],['GEN-TAPE','סרט בידוד',40]]},
- {b:'GEN',u:['B-01','B-02','B-03'],items:[['GEN-M8-30','בורג M8×30',400],['GEN-M10-40','בורג M10×40',250],['GEN-NUT-M8','אום M8',600],['GEN-NUT-M10','אום M10',400],['GEN-WSH-8','דסקית 8 מ״מ',800],['GEN-CLP-20','מהדק צינור 20–32',120],['GEN-CLP-40','מהדק צינור 40–60',80],['GEN-ORING','סט אורינגים',12],['GEN-CPLR','מחברי אוויר מהירים',40],['GEN-TERM','נעלי כבל',300],['GEN-SPLIT','פיני ביטחון',500],['GEN-RIVET','מסמרות שליפה',350]]},
- {b:'GEN',u:['M-01'],items:[['GEN-H7-24','נורה H7 24V',36],['GEN-P21-24','נורה P21W 24V',60],['GEN-FUSE-15','פיוז 15A',120],['GEN-FUSE-30','פיוז 30A',90],['GEN-RLY-24','ממסר 24V חמישה פינים',22],['GEN-LED-SIDE','פנס צד LED',14],['GEN-FLSH','ממסר מהבהב 24V',8]]},
-];
-const LETTERS='ABCD';
-const items=[];
-for(const g of GROUPS){
-  const per=Math.ceil(g.items.length/g.u.length);
-  g.u.forEach((uid,ui)=>{
-    const u=unitById[uid]; let cell=0;
-    g.items.slice(ui*per,(ui+1)*per).forEach(([sku,name,qty])=>{
-      const level=Math.floor(cell/u.slots)+1, slot=cell%u.slots; cell++;
-      items.push({sku,name,qty,brand:g.b,unit:u,level,slot,loc:`${u.id}-${level}-${LETTERS[slot]}`,meshes:[]});
-    });
-  });
-}
-for(const u of units){
-  const counts={}; items.filter(i=>i.unit===u).forEach(i=>counts[i.brand]=(counts[i.brand]||0)+1);
-  u.zone=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'GEN';
+/* =========================================================
+   Helpers
+   ========================================================= */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const keyOf=sku=>{let k=String(sku).trim().toUpperCase().replace(/[^A-Z0-9_\-.~:@+]/g,'_');if(/^\.+$/.test(k))k='_'+k;return k.slice(0,190);};
+const norm=s=>String(s).toLowerCase().replace(/[\s\-_.\/]/g,'');
+const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
+const rng=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const cssC=b=>`style="--c:${(BRANDS[b]||BRANDS.GEN).c}"`;
+const qtyClass=q=>q<=0?'bad':q<=2?'warn':'ok';
+const qtyText=q=>q<=0?'אזל':`במלאי ${q}`;
+function ago(t){
+  if(!t)return '';
+  const s=(Date.now()-t)/1000;
+  if(s<60)return 'עכשיו';
+  if(s<3600)return `לפני ${Math.round(s/60)} דק׳`;
+  if(s<86400){const h=Math.round(s/3600);return h===1?'לפני שעה':`לפני ${h} שעות`;}
+  if(s<172800)return 'אתמול';
+  return new Date(t).toLocaleDateString('he-IL',{day:'numeric',month:'numeric'});
 }
 
-/* ---------- Scene ---------- */
+/* =========================================================
+   Scene
+   ========================================================= */
 const canvas=document.getElementById('scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
@@ -245,99 +313,223 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color('#121416');
-scene.fog=new THREE.Fog('#121416',22,48);
-const camera=new THREE.PerspectiveCamera(48,1,0.05,120);
+scene.fog=new THREE.Fog('#121416',24,52);
+const camera=new THREE.PerspectiveCamera(48,1,0.05,140);
 const controls=new OrbitControls(camera,canvas);
 controls.enableDamping=true; controls.dampingFactor=0.08;
-controls.maxPolarAngle=Math.PI*0.48; controls.minDistance=1.2; controls.maxDistance=34;
+controls.maxPolarAngle=Math.PI*0.48; controls.minDistance=1.2; controls.maxDistance=36;
 
-scene.add(new THREE.HemisphereLight('#fff6e0','#2a2a30',1.1));
-const sun=new THREE.DirectionalLight('#ffffff',1.4); sun.position.set(4,9,4); scene.add(sun);
-for(let z=-2;z>-17;z-=4.5){const p=new THREE.PointLight('#fff1d0',6,7,1.6);p.position.set(0,3.0,z);scene.add(p);}
+scene.add(new THREE.HemisphereLight('#fff8e8','#3a3a40',1.15));
+const sun=new THREE.DirectionalLight('#ffffff',1.1); sun.position.set(5,10,6); scene.add(sun);
 
 const M=(c,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:.8,metalness:.1,...o});
-const matMetal=M('#8e959c',{metalness:.55,roughness:.45});
-const matShelf=M('#a8aeb3',{metalness:.4,roughness:.55});
-const matBlack=M('#24272b',{metalness:.3,roughness:.6});
-const matBin=M('#2f5bd3',{roughness:.55});
-const matCab=M('#7c8288',{metalness:.5,roughness:.45});
-const matCard=['#a57c4d','#b38a58','#9a7045','#bf9763'].map(c=>c);
 const box=(w,h,d,mat)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+function canvasTex(w,h,draw,repeat){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;if(repeat){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(...repeat);}t.anisotropy=4;return t;}
 
-// floor & markings
-const floorLen=Math.abs(backZ)+4;
-const floor=box(10.5,0.1,floorLen,M('#2a2d30',{roughness:.95}));
-floor.position.set(0,-0.05,-floorLen/2+2.5); scene.add(floor);
-const lineMat=new THREE.MeshBasicMaterial({color:'#f5c518'});
-[-1,1].forEach(s=>{const l=box(0.06,0.012,Math.abs(backZ)-0.2,lineMat);l.position.set(s*(AISLE/2-0.06),0.006,backZ/2+0.6);scene.add(l);});
-function stripeTex(){const c=document.createElement('canvas');c.width=256;c.height=32;const x=c.getContext('2d');x.fillStyle='#151515';x.fillRect(0,0,256,32);x.fillStyle='#f5c518';for(let i=-32;i<256;i+=32){x.beginPath();x.moveTo(i,32);x.lineTo(i+16,32);x.lineTo(i+32,0);x.lineTo(i+16,0);x.fill();}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
-const door=new THREE.Mesh(new THREE.PlaneGeometry(AISLE,0.24),new THREE.MeshBasicMaterial({map:stripeTex()}));
-door.rotation.x=-Math.PI/2; door.position.set(0,0.008,0.4); scene.add(door);
-// yellow steel beams like the real ceiling
-const beamMat=M('#d8ad12',{metalness:.4,roughness:.5});
-for(let z=-0.4;z>backZ;z-=4.2){
-  const b=box(9,0.16,0.12,beamMat); b.position.set(0,3.1,z); scene.add(b);
-  [-4.45,4.45].forEach(x=>{const p=box(0.12,3.1,0.12,beamMat);p.position.set(x,1.55,z);scene.add(p);});
+// structure materials (shared)
+const matRack=M('#1c1e21',{metalness:.45,roughness:.5});
+const matDeck=M('#2b2e32',{metalness:.3,roughness:.65});
+const matBin=M('#2f5bd3',{roughness:.5});
+const matCab=M('#7f868d',{metalness:.5,roughness:.45});
+const matDoor=M('#8b9299',{metalness:.5,roughness:.4,side:THREE.DoubleSide});
+const matBeam=M('#d9ae14',{metalness:.35,roughness:.5});
+const matWall=M('#d9d6cf',{roughness:.95});
+const SHARED=new Set([matRack,matDeck,matBin,matCab,matDoor]);
+
+// floor: worn concrete
+const floorTex=canvasTex(512,512,(x,w,h)=>{
+  x.fillStyle='#3a3c3e';x.fillRect(0,0,w,h);
+  const r=rng(11);
+  for(let i=0;i<5000;i++){const v=40+r()*40|0;x.fillStyle=`rgba(${v},${v},${v+2},${.25*r()})`;x.fillRect(r()*w,r()*h,1+r()*3,1+r()*3);}
+  for(let i=0;i<14;i++){x.fillStyle=`rgba(15,15,15,${.08+r()*.12})`;x.beginPath();x.ellipse(r()*w,r()*h,10+r()*60,6+r()*30,r()*3,0,7);x.fill();}
+},[4,8]);
+const floorLen=Math.abs(backZ)+1.2;
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(WALL_X*2,floorLen),new THREE.MeshStandardMaterial({map:floorTex,roughness:.95}));
+floor.rotation.x=-Math.PI/2; floor.position.set(0,0,0.6-floorLen/2); scene.add(floor);
+const apron=new THREE.Mesh(new THREE.PlaneGeometry(WALL_X*2+6,6),M('#2a2c2e',{roughness:1}));
+apron.rotation.x=-Math.PI/2; apron.position.set(0,-0.01,3.6); scene.add(apron);
+
+// aisle lines + door stripes
+const lineMat=new THREE.MeshBasicMaterial({color:'#e8bc17'});
+[-1,1].forEach(s=>{const l=box(0.07,0.01,Math.abs(backZ)-0.4,lineMat);l.position.set(s*(AISLE/2-0.07),0.006,backZ/2+0.5);scene.add(l);});
+const stripe=canvasTex(256,32,(x,w,h)=>{x.fillStyle='#151515';x.fillRect(0,0,w,h);x.fillStyle='#f5c518';for(let i=-32;i<w;i+=32){x.beginPath();x.moveTo(i,h);x.lineTo(i+16,h);x.lineTo(i+32,0);x.lineTo(i+16,0);x.fill();}});
+const door=new THREE.Mesh(new THREE.PlaneGeometry(AISLE,0.26),new THREE.MeshBasicMaterial({map:stripe}));
+door.rotation.x=-Math.PI/2; door.position.set(0,0.008,0.45); scene.add(door);
+
+// walls: painted block with high window grates
+const WALL_H=3.6;
+const grateTex=canvasTex(256,64,(x,w,h)=>{x.fillStyle='#fff3dc';x.fillRect(0,0,w,h);x.strokeStyle='rgba(120,110,90,.55)';x.lineWidth=2;for(let i=0;i<w;i+=10){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke();}for(let j=0;j<h;j+=16){x.beginPath();x.moveTo(0,j);x.lineTo(w,j);x.stroke();}},[6,1]);
+const grateMat=new THREE.MeshBasicMaterial({map:grateTex,color:'#f2e6cc'});
+function wall(len,cx,cz,rotY,grate=true){
+  const g=new THREE.Group(); g.position.set(cx,0,cz); g.rotation.y=rotY;
+  const w=box(len,WALL_H,0.18,matWall); w.position.y=WALL_H/2; g.add(w);
+  if(grate){const gr=new THREE.Mesh(new THREE.PlaneGeometry(len-0.6,0.62),grateMat); gr.position.set(0,2.95,0.1); g.add(gr);}
+  scene.add(g); return g;
+}
+wall(floorLen,-WALL_X,0.6-floorLen/2,Math.PI/2);
+wall(floorLen,WALL_X,0.6-floorLen/2,-Math.PI/2);
+wall(WALL_X*2,0,0.6-floorLen,0);
+const frontLen=WALL_X-AISLE/2-0.15;
+wall(frontLen,-(AISLE/2+0.15+frontLen/2),0.6,Math.PI,false);
+wall(frontLen,(AISLE/2+0.15+frontLen/2),0.6,Math.PI,false);
+const lintel=box(AISLE+0.3,0.5,0.18,matWall); lintel.position.set(0,WALL_H-0.25,0.6); scene.add(lintel);
+const roller=box(AISLE+0.3,0.28,0.32,M('#6d7277',{metalness:.5})); roller.position.set(0,WALL_H-0.62,0.75); scene.add(roller);
+
+// yellow steel beams + tube lights (as in the real place)
+for(let z=-0.2;z>backZ;z-=3.6){
+  const b=box(WALL_X*2-0.2,0.2,0.12,matBeam); b.position.set(0,3.3,z); scene.add(b);
+  const f=box(WALL_X*2-0.2,0.03,0.22,matBeam); f.position.set(0,3.2,z); scene.add(f);
+}
+for(let z=-1.9;z>backZ+0.6;z-=3.6){
+  const p=new THREE.PointLight('#fff4dc',7,8,1.5);p.position.set(0,3.0,z);scene.add(p);
+  for(const x of[-2.6,2.6]){const q=new THREE.PointLight('#fff4dc',3.5,6,1.6);q.position.set(x,2.9,z);scene.add(q);}
 }
 
-const rand=(s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(7);
-const pickables=[];
+/* =========================================================
+   Units
+   ========================================================= */
 function cellLocal(u,level,slot){
   const cw=u.w/u.slots, s=u.flip?u.slots-1-slot:slot;
   return {x:-u.w/2+cw*(s+.5),y0:u.levels[level-1],y1:level<u.levels.length?u.levels[level]:u.h,cw};
 }
-function tag(m,u,item){m.userData.unit=u;if(item)m.userData.item=item;pickables.push(m);return m;}
+function tag(o,u){o.traverse(m=>{m.userData.unit=u;});return o;}
 
 function buildUnit(u){
   const g=new THREE.Group(); g.position.set(u.x,0,u.z); g.rotation.y=u.rot; u.group=g; scene.add(g);
+  const add=m=>{g.add(tag(m,u));return m;};
   if(u.type==='drawers'){
-    const base=tag(box(u.w,u.levels[0],u.d,matCab),u); base.position.y=u.levels[0]/2; g.add(base);
-    const back=tag(box(u.w,u.h-u.levels[0],0.04,matCab),u); back.position.set(0,(u.h+u.levels[0])/2,-u.d/2+0.02); g.add(back);
+    const base=add(box(u.w,u.levels[0],u.d,matCab)); base.position.y=u.levels[0]/2;
+    const back=add(box(u.w,u.h-u.levels[0],0.04,matCab)); back.position.set(0,(u.h+u.levels[0])/2,-u.d/2+0.02);
     u.drawers={};
     for(let l=1;l<=u.levels.length;l++)for(let s=0;s<u.slots;s++){
       const c=cellLocal(u,l,s);
-      const m=new THREE.MeshStandardMaterial({color:'#dfe7ea',transparent:true,opacity:.55,roughness:.2});
-      const d=tag(box(c.cw-0.025,c.y1-c.y0-0.025,u.d-0.06,m),u); d.position.set(c.x,(c.y0+c.y1)/2,0.02); g.add(d);
-      u.drawers[l+'-'+s]=d;
+      const d=add(box(c.cw-0.025,c.y1-c.y0-0.025,u.d-0.06,new THREE.MeshStandardMaterial({color:'#dfe7ea',transparent:true,opacity:.55,roughness:.2})));
+      d.position.set(c.x,(c.y0+c.y1)/2,0.02); u.drawers[l+'-'+s]=d;
     }
+  }else if(u.type==='cabinet'){
+    const t=0.03;
+    [[u.w,t,u.d,0,t/2,0],[u.w,t,u.d,0,u.h-t/2,0],[t,u.h,u.d,-u.w/2+t/2,u.h/2,0],[t,u.h,u.d,u.w/2-t/2,u.h/2,0],[u.w,u.h,t,0,u.h/2,-u.d/2+t/2]]
+      .forEach(([w,h,d,x,y,z])=>{const m=add(box(w,h,d,matCab));m.position.set(x,y,z);});
+    for(const y of u.levels.slice(1)){const s=add(box(u.w-2*t,0.02,u.d-t,matCab));s.position.set(0,y,0);}
+    [-1,1].forEach(sd=>{ // two doors swung open
+      const hinge=new THREE.Group(); hinge.position.set(sd*u.w/2,0,u.d/2); hinge.rotation.y=sd*-1.9; g.add(hinge);
+      const dr=box(u.w/2-0.01,u.h-0.02,0.02,matDoor); dr.position.set(-sd*(u.w/4),u.h/2,0); hinge.add(dr);
+      const hd=box(0.015,0.16,0.03,M('#222')); hd.position.set(-sd*(u.w/2-0.06),u.h*0.55,0.02); hinge.add(hd);
+      tag(hinge,u);
+    });
   }else{
-    const fm=u.type==='metal'?matMetal:matBlack, sm=u.type==='metal'?matShelf:matBlack;
-    for(const sx of[-1,1])for(const sz of[-1,1]){const p=tag(box(0.045,u.h,0.045,fm),u);p.position.set(sx*(u.w/2-0.02),u.h/2,sz*(u.d/2-0.02));g.add(p);}
-    for(const y of[...u.levels,u.h-0.02]){const s=tag(box(u.w,0.03,u.d,sm),u);s.position.y=y;g.add(s);}
-    if(u.type==='bins'){
-      u.bins={};
-      for(let l=1;l<=u.levels.length;l++)for(let s=0;s<u.slots;s++){
-        const c=cellLocal(u,l,s), bh=Math.min(0.26,c.y1-c.y0-0.08);
-        const b=tag(box(c.cw-0.05,bh,u.d-0.08,matBin),u); b.position.set(c.x,c.y0+0.015+bh/2,0); g.add(b);
-        const strip=tag(box(c.cw-0.12,0.05,0.01,new THREE.MeshStandardMaterial({color:'#e8ecf2',transparent:true})),u);
-        strip.position.set(c.x,c.y0+0.015+bh*0.7,u.d/2-0.035); g.add(strip); u.bins[l+'-'+s]=strip;
+    // black boltless rack: uprights, end braces, beams, decks
+    const pw=0.055;
+    for(const sx of[-1,1])for(const sz of[-1,1]){const p=add(box(pw,u.h,pw,matRack));p.position.set(sx*(u.w/2-pw/2),u.h/2,sz*(u.d/2-pw/2));}
+    for(const sx of[-1,1]){
+      for(let i=0;i<4;i++){const y0=0.15+i*(u.h-0.3)/4,y1=y0+(u.h-0.3)/4,len=Math.hypot(y1-y0,u.d-pw);
+        const b=add(box(0.025,len,0.025,matRack));b.position.set(sx*(u.w/2-pw/2),(y0+y1)/2,0);b.rotation.x=(i%2?1:-1)*Math.atan2(u.d-pw,y1-y0);}
+    }
+    for(const y of[...u.levels,u.h-0.03]){
+      const deck=add(box(u.w-0.02,0.018,u.d-0.02,matDeck));deck.position.y=y;
+      for(const sz of[-1,1]){const bm=add(box(u.w,0.07,0.035,matRack));bm.position.set(0,y-0.02,sz*(u.d/2-0.017));}
+    }
+    u.bins={};
+    for(const l of u.binLevels){
+      for(let s=0;s<u.slots;s++){
+        const c=cellLocal(u,l,s);
+        const perCell=c.cw>0.6?2:1;
+        for(let k=0;k<perCell;k++){
+          const bw=c.cw/perCell-0.04, bh=Math.min(0.24,c.y1-c.y0-0.1);
+          const bx=c.x-c.cw/2+(c.cw/perCell)*(k+.5);
+          const b=add(box(bw,bh,u.d-0.06,matBin)); b.position.set(bx,c.y0+0.01+bh/2,0);
+          const lip=add(box(bw*0.9,bh*0.45,0.04,matBin)); lip.position.set(bx,c.y0+0.01+bh*0.45,u.d/2-0.01); lip.rotation.x=-0.35;
+          const strip=add(box(bw*0.55,0.045,0.006,new THREE.MeshStandardMaterial({color:'#e8ecf2'})));
+          strip.position.set(bx,c.y0+0.01+bh*0.62,u.d/2+0.01); strip.rotation.x=-0.35;
+          (u.bins[l+'-'+s]??=[]).push({bin:b,strip});
+        }
       }
     }
   }
-  // floating label
-  const cv=document.createElement('canvas'); cv.width=256; cv.height=112; const x=cv.getContext('2d');
-  x.fillStyle='rgba(20,22,24,.88)'; x.beginPath(); x.roundRect(4,4,248,104,16); x.fill();
-  x.fillStyle=BRANDS[u.zone].c; x.fillRect(4,92,248,12);
-  x.fillStyle='#ece8df'; x.textAlign='center'; x.font='600 46px "IBM Plex Mono", monospace'; x.fillText(u.id,128,54);
-  x.fillStyle='#9aa2a9'; x.font='500 22px "IBM Plex Sans Hebrew", sans-serif'; x.fillText(BRANDS[u.zone].label,128,82);
-  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+  u.content=new THREE.Group(); g.add(u.content);
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=112; u.signCanvas=cv;
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; u.signTex=t;
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
-  sp.scale.set(0.78,0.34,1); sp.position.set(0,u.h+0.32,u.type==='metal'?u.d/2+0.35:0); sp.renderOrder=5; g.add(sp);
+  sp.scale.set(0.78,0.34,1); sp.position.set(0,u.h+0.32,u.row?u.d/2+0.35:0); sp.renderOrder=5; g.add(sp);
+  drawSign(u,null);
+}
+function drawSign(u,zone){
+  if(u.signDrawn&&u.signZone===zone)return; u.signZone=zone; u.signDrawn=true;
+  const x=u.signCanvas.getContext('2d'); x.clearRect(0,0,256,112);
+  x.fillStyle='rgba(20,22,24,.9)'; x.beginPath(); x.roundRect(4,4,248,104,16); x.fill();
+  x.fillStyle=zone?BRANDS[zone].c:'#3a3f44'; x.fillRect(4,92,248,12);
+  x.fillStyle='#ece8df'; x.textAlign='center'; x.font='600 46px "IBM Plex Mono", monospace'; x.fillText(u.id,128,54);
+  x.fillStyle='#9aa2a9'; x.font='500 22px "IBM Plex Sans Hebrew", sans-serif'; x.fillText(zone?BRANDS[zone].label:'פנוי',128,82);
+  u.signTex.needsUpdate=true;
 }
 
-function placeItem(it){
-  const u=it.unit, c=cellLocal(u,it.level,it.slot), key=it.level+'-'+it.slot, col=new THREE.Color(BRANDS[it.brand].c);
-  if(u.type==='bins'){const s=u.bins[key]; s.material.color.copy(col); it.meshes.push(s); s.userData.item=it; return;}
-  if(u.type==='drawers'){const d=u.drawers[key]; d.material.color.copy(col).lerp(new THREE.Color('#ffffff'),.45); it.meshes.push(d); d.userData.item=it; return;}
-  const n=1+Math.floor(rand()*2);
-  for(let k=0;k<n;k++){
-    const w=(c.cw/n)*(0.7+rand()*0.2), h=(c.y1-c.y0)*(0.42+rand()*0.38), d=u.d*(0.6+rand()*0.25);
-    const m=tag(box(w,h,d,M(matCard[Math.floor(rand()*4)],{transparent:true,roughness:.9})),u,it);
-    m.position.set(c.x-c.cw/2+(c.cw/n)*(k+.5),c.y0+0.015+h/2,(rand()-.5)*0.05); u.group.add(m);
-    const lab=tag(box(w*0.62,Math.min(0.08,h*0.3),0.006,new THREE.MeshStandardMaterial({color:col,transparent:true,roughness:.6})),u,it);
-    lab.position.set(m.position.x,m.position.y+h*0.12,m.position.z+d/2+0.003); u.group.add(lab);
-    it.meshes.push(m,lab);
+/* item shapes, picked from the part name so the shelves read like the real ones */
+const CARD=['#a57c4d','#b38a58','#9a7045','#bf9763','#c9a571'];
+function makeShape(it,w,h,d,r){
+  const g=new THREE.Group(), n=it.name||'', brandCol=new THREE.Color((BRANDS[it.brand]||BRANDS.GEN).c);
+  if(/צינור|כבל|גליל/.test(n)){
+    const R=Math.min(w,d)/2*0.88, tube=R*0.26, mat=M('#1b1c1e',{roughness:.6});
+    const k=Math.max(1,Math.min(3,Math.floor(h/(tube*2.2))));
+    for(let i=0;i<k;i++){const c=new THREE.Mesh(new THREE.TorusGeometry(R-tube,tube,10,28),mat);c.rotation.x=Math.PI/2;c.position.y=tube+i*tube*2.05;g.add(c);}
+  }else if(/שמן|נוזל|AdBlue|ATF|קירור/i.test(n)){
+    const col=/AdBlue/i.test(n)?'#eef2f7':/קירור/.test(n)?'#2e9e5b':/בלמים/.test(n)?'#f0f0ee':/ATF|גיר/.test(n)?'#b3261e':'#1d1e20';
+    const cap=/AdBlue/i.test(n)?'#2b6fd6':'#d23a2a';
+    const cw=Math.min(w/2-0.02,0.2), ch=Math.min(h,0.36), cd=Math.min(d*0.85,0.28);
+    for(const k of[-1,1]){if(w<0.3&&k>0)continue;
+      const x=w<0.3?0:k*(cw/2+0.01);
+      const j=box(cw,ch,cd,M(col,{roughness:.55})); j.position.set(x,ch/2,0); g.add(j);
+      const hd=box(cw*0.5,0.05,0.03,M(col)); hd.position.set(x,ch+0.02,-cd*0.2); g.add(hd);
+      const cp=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.04,12),M(cap)); cp.position.set(x+cw*0.25,ch+0.02,cd*0.25); g.add(cp);
+    }
+  }else if(/מצבר/.test(n)){
+    const bw=Math.min(w,0.34),bh=Math.min(h,0.23),bd=Math.min(d,0.18);
+    const b=box(bw,bh,bd,M('#151618',{roughness:.5})); b.position.y=bh/2; g.add(b);
+    [['#c62828',-1],['#222',1]].forEach(([c,s])=>{const t=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.03,10),M(c));t.position.set(s*bw*0.33,bh+0.015,0);g.add(t);});
+  }else if(/דיסק/.test(n)){
+    const R=Math.min(w,d)/2*0.9, mat=M('#8c9196',{metalness:.7,roughness:.35});
+    const k=Math.max(1,Math.min(3,Math.floor(h/0.06)));
+    for(let i=0;i<k;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(R,R,0.045,28),mat);c.position.y=0.024+i*0.05;g.add(c);}
+  }else{
+    const bw=w*(0.78+r()*0.18), bh=h*(0.45+r()*0.4), bd=d*(0.65+r()*0.25);
+    const isMann=/MANN/i.test(n);
+    const b=box(bw,bh,bd,M(isMann?'#e8d630':CARD[Math.floor(r()*CARD.length)],{roughness:.92})); b.position.y=bh/2; g.add(b);
+    if(!isMann){const tape=box(bw*0.12,0.004,bd+0.002,M('#d8c49a',{roughness:.4})); tape.position.y=bh+0.002; g.add(tape);}
+    const lab=box(bw*0.6,Math.min(0.07,bh*0.3),0.004,new THREE.MeshStandardMaterial({color:isMann?'#1d7d3a':brandCol,roughness:.6}));
+    lab.position.set(0,bh*0.62,bd/2+0.002); g.add(lab);
+    if(r()<0.35&&bh<h*0.6){const b2=box(bw*0.8,bh*0.6,bd*0.85,M(CARD[Math.floor(r()*CARD.length)],{roughness:.92}));b2.position.set((r()-.5)*0.03,bh+bh*0.3,0);b2.rotation.y=(r()-.5)*0.2;g.add(b2);}
   }
+  return g;
+}
+function disposeTree(o){o.traverse(m=>{if(m.isMesh){m.geometry.dispose();if(!SHARED.has(m.material))m.material.dispose();}});}
+
+function rebuildContents(){
+  const byCell={};
+  for(const it of items){it.meshes=[];if(it.valid)(byCell[`${it.unit}|${it.level}|${it.slot}`]??=[]).push(it);}
+  for(const u of units){
+    disposeTree(u.content); u.content.clear();
+    if(u.bins)for(const arr of Object.values(u.bins))for(const b of arr){b.strip.material.color.set('#e8ecf2');b.strip.material.opacity=1;b.strip.userData.item=b.bin.userData.item=null;}
+    if(u.drawers)for(const d of Object.values(u.drawers)){d.material.color.set('#dfe7ea');d.material.opacity=.55;d.userData.item=null;}
+    const counts={};
+    for(let l=1;l<=u.levels.length;l++)for(let s=0;s<u.slots;s++){
+      const list=byCell[`${u.id}|${l}|${s}`]; if(!list)continue;
+      list.forEach(i=>counts[i.brand]=(counts[i.brand]||0)+1);
+      const key=l+'-'+s;
+      if(u.drawers){const d=u.drawers[key];d.material.color.set(BRANDS[list[0].brand].c).lerp(new THREE.Color('#ffffff'),.45);d.userData.item=list[0];list.forEach(i=>i.meshes.push(d));continue;}
+      if(u.bins&&u.bins[key]){u.bins[key].forEach((b,k)=>{const it=list[Math.min(k,list.length-1)];b.strip.material.color.set(BRANDS[it.brand].c);b.strip.userData.item=b.bin.userData.item=it;it.meshes.push(b.strip);});continue;}
+      const c=cellLocal(u,l,s), shown=list.slice(0,4), n=shown.length;
+      shown.forEach((it,k)=>{
+        const r=rng(hash(it.key)), sw=c.cw/n;
+        const obj=makeShape(it,sw-0.03,c.y1-c.y0-0.06,u.d-0.06,r);
+        obj.position.set(c.x-c.cw/2+sw*(k+.5),c.y0+0.012,(r()-.5)*0.04);
+        obj.rotation.y=(r()-.5)*0.08;
+        obj.traverse(m=>{if(m.isMesh){m.userData.unit=u;m.userData.item=it;it.meshes.push(m);}});
+        u.content.add(obj);
+      });
+    }
+    u.zone=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+    drawSign(u,u.zone);
+  }
+  applyFilter();
 }
 
 // highlight cage
@@ -347,139 +539,411 @@ const hlEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometr
 hlGroup.add(hlFill,hlEdge); hlGroup.visible=false;
 const unitEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),new THREE.LineBasicMaterial({color:'#f5c518',transparent:true,opacity:.55}));
 unitEdge.visible=false;
+function showHighlight(u,cell){
+  if(!u){unitEdge.visible=false;hlGroup.visible=false;return;}
+  u.group.add(unitEdge); unitEdge.scale.set(u.w+0.04,u.h+0.04,u.d+0.04); unitEdge.position.set(0,u.h/2,0); unitEdge.visible=true;
+  if(cell&&cell.level>=1&&cell.level<=u.levels.length&&cell.slot<u.slots){
+    const c=cellLocal(u,cell.level,cell.slot);
+    u.group.add(hlGroup); hlGroup.scale.set(c.cw-0.02,c.y1-c.y0-0.02,u.d+0.06); hlGroup.position.set(c.x,(c.y0+c.y1)/2,0); hlGroup.visible=true;
+  }else hlGroup.visible=false;
+}
 
-/* ---------- Camera moves ---------- */
+/* =========================================================
+   Camera
+   ========================================================= */
 let tween=null;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function moveCam(pos,target,dur=1000){
   if(reduce){camera.position.copy(pos);controls.target.copy(target);return;}
   tween={p0:camera.position.clone(),t0:controls.target.clone(),p1:pos,t1:target,start:performance.now(),dur};
 }
-const VIEWS={
-  over:()=>moveCam(new THREE.Vector3(9,13,5),new THREE.Vector3(0,0,-6.5)),
-  door:()=>moveCam(new THREE.Vector3(0,1.75,3.2),new THREE.Vector3(0,1.2,-6)),
-};
+const OVER=[new THREE.Vector3(10,13.5,5.5),new THREE.Vector3(0,0,-6.6)];
+const VIEWS={over:()=>moveCam(OVER[0].clone(),OVER[1].clone()),door:()=>moveCam(new THREE.Vector3(0,1.75,4.2),new THREE.Vector3(0,1.2,-6))};
 function focusCell(u,level,slot){
   const c=level?cellLocal(u,level,slot):{x:0,y0:0.9,y1:1.5};
   const target=u.group.localToWorld(new THREE.Vector3(c.x,(c.y0+c.y1)/2,0));
   const normal=new THREE.Vector3(0,0,1).applyQuaternion(u.group.quaternion);
   const up=Math.max(1.6,3.5-target.y);
-  // row shelves: look from the side aisle, a bit toward the main aisle and above the rows
-  const off=u.type==='metal'?new THREE.Vector3(u.side==='L'?1.9:-1.9,up,0).addScaledVector(normal,1.3)
-    :normal.clone().multiplyScalar(u.side==='B'?3.0:1.7).add(new THREE.Vector3(0,up,u.side==='B'?0.3:0.7));
-  const pos=target.clone().add(off);
-  moveCam(pos,target);
+  const off=u.row?new THREE.Vector3(u.side==='L'?1.9:-1.9,up,0).addScaledVector(normal,1.3)
+    :normal.clone().multiplyScalar(u.side==='B'?3.0:2.0).add(new THREE.Vector3(0,up*0.8,u.side==='B'?0.3:1.2));
+  if(camera.aspect<1)off.multiplyScalar(1.6); // narrow phone view: step back
+  moveCam(target.clone().add(off),target);
 }
 
-/* ---------- Selection ---------- */
-const state={unit:null,item:null,brand:null,view:'home',q:''};
-function showHighlight(u,item){
-  u.group.add(unitEdge); unitEdge.scale.set(u.w+0.04,u.h+0.04,u.d+0.04); unitEdge.position.set(0,u.h/2,0); unitEdge.visible=true;
-  if(item){
-    const c=cellLocal(u,item.level,item.slot);
-    u.group.add(hlGroup); hlGroup.scale.set(c.cw-0.02,c.y1-c.y0-0.02,u.d+0.06); hlGroup.position.set(c.x,(c.y0+c.y1)/2,0); hlGroup.visible=true;
-  }else hlGroup.visible=false;
+/* =========================================================
+   State + data
+   ========================================================= */
+let items=[], byKey={}, logEntries=[];
+const state={view:'home',unit:null,itemKey:null,brand:null,q:'',list:null,listTitle:'',form:null,qtyDraft:null,loaded:false,demoArm:false,busy:false};
+let db=null,user=null,downloads=null,myId=null,canWrite=false,dataProblem=null;
+const names={};
+
+function normalizeItem(id,d){
+  const u=unitById[d.unit], level=+d.level||0, slot=+d.slot||0;
+  const valid=!!u&&level>=1&&level<=u.levels.length&&slot>=0&&slot<u.slots;
+  return {key:id,sku:String(d.sku??id),name:String(d.name??''),brand:BRANDS[d.brand]?d.brand:'GEN',unit:String(d.unit||''),level,slot,
+    qty:Number.isFinite(+d.qty)?+d.qty:0,note:String(d.note??''),updatedAt:+d.updatedAt||0,updatedBy:d.updatedBy||null,demo:!!d.demo,valid,
+    loc:valid?`${d.unit}-${level}-${LETTERS[slot]}`:null,meshes:[]};
 }
-function selectItem(it){state.unit=it.unit;state.item=it;state.view='unit';showHighlight(it.unit,it);focusCell(it.unit,it.level,it.slot);render();openPanel();}
-function selectUnit(u){state.unit=u;state.item=null;state.view='unit';showHighlight(u,null);focusCell(u);render();openPanel();}
-function goHome(){state.unit=null;state.item=null;state.view='home';unitEdge.visible=false;hlGroup.visible=false;render();}
+const curItem=()=>state.itemKey?byKey[state.itemKey]:null;
+
+async function resolveNames(ids){
+  if(!user)return;
+  const need=[...new Set(ids.filter(Boolean))].filter(i=>!(i in names));
+  if(!need.length)return;
+  need.forEach(i=>names[i]=names[i]||{name:'',avatar:''});
+  const ps=await user.profiles(need);
+  for(const id of need)names[id]={name:ps[id]?.name||'',avatar:ps[id]?.avatarUrl||''};
+  if(state.view!=='form')renderKeepScroll();
+}
+const nameOf=id=>names[id]?.name||'מישהו';
+
+async function initData(){
+  const cl=window.claude;
+  if(!cl?.use){dataProblem='offline';render();return;}
+  [db,user,downloads]=await Promise.all([cl.use('db'),cl.use('user'),cl.use('downloads')]);
+  if(user){
+    const me=await user.me(); myId=me.id;
+    if(myId)names[myId]={name:me.name,avatar:me.avatarUrl};
+    const cw=await user.can('data.write');
+    canWrite=cw===null?true:cw;
+    document.getElementById('me').hidden=false;
+    document.getElementById('meAvatar').src=me.avatarUrl;
+    document.getElementById('meName').textContent=me.name||'אורח';
+    document.getElementById('meRole').textContent=me.isOwner?'מנהל המערכת':canWrite?'מחסנאי · עריכה':'צפייה בלבד';
+    layout();
+  }
+  if(!db){dataProblem='offline';canWrite=false;render();return;}
+  db.collection('items').onSnapshot(snap=>{
+    items=snap.docs.map(d=>normalizeItem(d.id,d.data())); byKey=Object.fromEntries(items.map(i=>[i.key,i]));
+    state.loaded=true; rebuildContents(); refreshChips();
+    if(state.pendingKey&&byKey[state.pendingKey]){const k=state.pendingKey;state.pendingKey=null;return selectItem(byKey[k]);}
+    const it=curItem();
+    if(state.itemKey&&!it&&state.view==='unit')state.itemKey=null;
+    if(state.view==='unit'){if(it&&it.valid)showHighlight(unitById[it.unit],it);else if(state.unit)showHighlight(state.unit,null);}
+    if(state.view==='results'&&state.listTitle==='search')state.list=search(state.q);
+    if(state.view!=='form')renderKeepScroll();
+  },err=>{dataProblem=err.code;render();});
+  db.collection('log').orderBy('t','desc').limit(60).onSnapshot(snap=>{
+    logEntries=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(state.view==='home'||state.view==='log')renderKeepScroll();
+  },()=>{});
+}
+
+function writeFailed(e){
+  if(e?.code==='invalid_argument'){canWrite=false;toast('אין לך הרשאה לשנות את המלאי. בקש מהבעלים הרשאת עריכה.');render();}
+  else if(e?.code==='quota_exceeded')toast('המאגר מלא. צריך למחוק פריטים או פעילות ישנה.');
+  else toast('השמירה נכשלה. בדוק את החיבור ונסה שוב.');
+}
+let pruned=false;
+async function addLog(act,sku,info){
+  try{await db.collection('log').add({t:Date.now(),by:myId,act,sku,info:info||''});}catch{}
+  if(pruned)return; pruned=true;
+  try{ // keep the activity log to the last 120 days
+    const old=await db.collection('log').where('t','<',Date.now()-120*864e5).limit(50).get();
+    for(const d of old.docs)await db.collection('log').doc(d.id).delete();
+  }catch{}
+}
+
+/* =========================================================
+   Selection
+   ========================================================= */
+function selectItem(it){
+  state.view='unit'; state.itemKey=it.key; state.qtyDraft=null;
+  const u=unitById[it.unit]; state.unit=u||null;
+  if(it.valid){showHighlight(u,it);focusCell(u,it.level,it.slot);}else showHighlight(null);
+  render(); body.scrollTop=0; openPanel();
+}
+function selectUnit(u){state.view='unit';state.unit=u;state.itemKey=null;showHighlight(u,null);focusCell(u);render();body.scrollTop=0;openPanel();}
+function goHome(){state.view='home';state.unit=null;state.itemKey=null;state.form=null;state.demoArm=false;showHighlight(null);render();body.scrollTop=0;}
+function showList(list,title){state.view='results';state.list=list;state.listTitle=title;render();body.scrollTop=0;openPanel();}
 
 function applyFilter(){
   for(const it of items){
-    const on=!state.brand||it.brand===state.brand;
-    for(const m of it.meshes){m.material.transparent=true;m.material.opacity=on?(it.unit.type==='drawers'?.75:1):.12;}
+    const on=!state.brand||it.brand===state.brand, base=unitById[it.unit]?.type==='drawers'?.75:1;
+    for(const m of it.meshes){m.material.transparent=true;m.material.opacity=on?base:.12;}
   }
 }
+function refreshChips(){
+  chips.innerHTML=Object.entries(BRANDS).map(([k,b])=>`<button class="chip" data-b="${k}" aria-pressed="${state.brand===k}" style="--c:${b.c}"><i></i>${b.label}<small>${items.filter(i=>i.brand===k).length}</small></button>`).join('');
+}
 
-/* ---------- Search ---------- */
-const norm=s=>s.toLowerCase().replace(/[\s\-_.]/g,'');
+/* =========================================================
+   Search
+   ========================================================= */
 function search(q){
-  const n=norm(q); if(!n)return [];
-  const exact=items.filter(i=>norm(i.sku)===n);
-  if(exact.length)return exact;
-  return items.filter(i=>norm(i.sku).includes(n)||i.name.includes(q.trim())||norm(i.loc)===n||BRANDS[i.brand].label.toLowerCase()===q.trim().toLowerCase());
+  const n=norm(q), t=q.trim(); if(!n)return [];
+  const exact=items.filter(i=>norm(i.sku)===n); if(exact.length)return exact;
+  const brand=Object.entries(BRANDS).find(([,b])=>b.label.toLowerCase()===t.toLowerCase())?.[0];
+  return items.filter(i=>norm(i.sku).includes(n)||(t.length>1&&i.name.includes(t))||(n.length>2&&i.loc&&norm(i.loc).startsWith(n))||i.brand===brand)
+    .sort((a,b)=>(norm(a.sku).indexOf(n)+1||99)-(norm(b.sku).indexOf(n)+1||99));
 }
 
-/* ---------- Panel ---------- */
-const body=document.getElementById('panelBody'), panel=document.getElementById('panel');
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const cssC=b=>`style="--c:${BRANDS[b].c}"`;
-const row=it=>`<button class="row" data-sku="${esc(it.sku)}" ${cssC(it.brand)}><i></i><span class="nm"><b>${esc(it.name)}</b><span class="code">${esc(it.sku)}</span></span><span class="loc">${it.loc}</span></button>`;
-
+/* =========================================================
+   Panel views
+   ========================================================= */
+const body=document.getElementById('panelBody'), panel=document.getElementById('panel'), chips=document.getElementById('chips');
+const row=it=>`<button class="row" data-sku="${esc(it.key)}" ${cssC(it.brand)}><i></i><span class="nm"><b>${esc(it.name)}</b><span class="code">${esc(it.sku)}</span></span><span class="end"><span class="loc">${it.loc||'—'}</span><span class="q ${qtyClass(it.qty)}">${qtyText(it.qty)}</span></span></button>`;
+const ACT={add:['הוספה','add'],move:['העברה','move'],qty:['כמות','qty'],edit:['עדכון','move'],del:['מחיקה','del']};
+function logRows(list){
+  resolveNames(list.map(l=>l.by));
+  return `<div class="log">${list.map(l=>{const a=ACT[l.act]||['שינוי',''];const av=names[l.by]?.avatar;return `<div class="log-row">${av?`<img alt="" src="${esc(av)}">`:'<img alt="">'}<div class="what"><span class="act ${a[1]}">${a[0]}</span><span class="code">${esc(l.sku)}</span><small>${esc(l.info)} · ${esc(nameOf(l.by))}</small></div><time>${ago(l.t)}</time></div>`;}).join('')}</div>`;
+}
+function problemHTML(){
+  if(!dataProblem)return '';
+  return `<div class="note err">${dataProblem==='offline'?'אין חיבור למאגר המלאי בתצוגה הזו. פתחו את הקישור כשאתם מחוברים לחשבון Claude שקיבל גישה לעמוד.':'החיבור למאגר המלאי נותק. רעננו את הדף.'}</div>`;
+}
 function homeHTML(){
-  const zones=units.filter(u=>u.side!=='M').reduce((a,u)=>{(a[u.zone]??=[]).push(u.id);return a;},{});
+  const out=items.filter(i=>i.qty<=0), low=items.filter(i=>i.qty>0&&i.qty<=2), demo=items.filter(i=>i.demo), bad=items.filter(i=>!i.valid);
+  const zones={}; units.forEach(u=>{if(u.zone&&u.row)(zones[u.zone]??=[]).push(u.id);});
+  const first=(names[myId]?.name||'').split(' ')[0];
+  const edit=canWrite&&!dataProblem;
   return `
-  <div><p class="eyebrow">איתור פריט</p><h2>הקלד מק״ט, המחסן יראה לך איפה</h2>
-  <p class="lead">אפשר גם ללחוץ על כל מדף במודל כדי לראות מה יש עליו, קומה אחרי קומה.</p></div>
-  <div class="demo">זו הדמיה. המבנה משוער ופריטי המלאי הם דוגמה בלבד, עד שתעביר את המיקומים האמיתיים.</div>
-  <div><h3>נסה מק״ט לדוגמה</h3><div class="try">${['5801592275','23390-E0020','CU 32 001','68191349AA','GEN-FUSE-15'].map(s=>`<button data-sku="${s}">${s}</button>`).join('')}</div></div>
+  <div><p class="eyebrow">${first?`שלום ${esc(first)}`:'איתור פריט'}</p><h2>הקלד מק״ט, המחסן יראה לך איפה</h2>
+  <p class="lead">או לחץ על מדף במודל כדי לראות מה יש עליו.</p></div>
+  ${problemHTML()}
+  ${state.loaded?`<div class="stats">
+    <button class="stat" data-act="all"><b>${items.length}</b><span>מק״טים</span></button>
+    <button class="stat bad" data-act="out"><b>${out.length}</b><span>אזלו</span></button>
+    <button class="stat warn" data-act="low"><b>${low.length}</b><span>מלאי נמוך</span></button>
+  </div>`:(dataProblem?'':'<p class="hint">טוען את המלאי…</p>')}
+  ${edit||(downloads&&items.length)?`<div class="actions">${edit?'<button class="btn primary grow" data-act="new">+ הוספת פריט</button>':''}${downloads&&items.length?'<button class="btn" data-act="csv">ייצוא לאקסל</button>':''}</div>`:''}
+  ${demo.length?`<div class="note">${demo.length} מהפריטים הם פריטי דוגמה, כדי להראות איך זה עובד. לפני שמזינים את המלאי האמיתי, מוחקים אותם כאן.
+    ${edit?`<div><button class="btn small danger${state.demoArm?' armed':''}" data-act="demo" ${state.busy?'disabled':''}>${state.busy?'מוחק…':state.demoArm?`לחץ שוב למחיקת ${demo.length} פריטי הדוגמה`:'מחיקת פריטי הדוגמה'}</button></div>`:''}</div>`:''}
+  ${state.loaded&&!items.length?`<div class="note">המחסן עדיין ריק. ${edit?'לחצו על "הוספת פריט" כדי להזין את הפריט הראשון.':'הפריטים יופיעו כאן ברגע שהמחסנאים יזינו אותם.'}</div>`:''}
+  ${bad.length?`<div class="note err">${bad.length} פריטים רשומים במיקום שלא קיים במפה. <button class="btn small" data-act="bad">הצג אותם</button></div>`:''}
+  ${items.length?`<div><h3>נסה מק״ט לדוגמה</h3><div class="try">${items.filter(i=>i.valid).filter((_,k)=>k%9===0).slice(0,5).map(i=>`<button data-sku="${esc(i.key)}">${esc(i.sku)}</button>`).join('')}</div></div>`:''}
+  ${logEntries.length?`<div><h3>פעילות אחרונה <button data-act="log">הכל</button></h3>${logRows(logEntries.slice(0,5))}</div>`:''}
   <div><h3>איך קוראים מיקום</h3>
-    <div class="key"><div><b>L</b><span>צד</span></div><div><b>04</b><span>מדף</span></div><div><b>3</b><span>קומה מלמטה</span></div><div><b>B</b><span>תא</span></div></div>
-    <p class="lead" style="font-size:13px">L שמאל · R ימין · B קיר אחורי · M ארון מגירות. המדפים עומדים בשורות לרוחב, שניים גב אל גב: מספר אי־זוגי פונה לכניסה, והזוגי שאחריו הוא הצד האחורי של אותה שורה. תא A הוא הקרוב לשביל הראשי.</p></div>
-  <div><h3>אזורים במחסן</h3><div class="zones">${Object.entries(zones).map(([b,ids])=>`<button class="zone" data-unit="${ids[0]}" ${cssC(b)}><i></i>${BRANDS[b].label}<span class="code">${ids[0]}${ids.length>1?'–'+ids.at(-1).slice(2):''}</span></button>`).join('')}
-  <button class="zone" data-unit="M-01" ${cssC('GEN')}><i></i>נורות ופיוזים<span class="code">M-01</span></button></div></div>`;
+    <div class="key"><div><b>L</b><span>צד</span></div><div><b>03</b><span>מדף</span></div><div><b>2</b><span>קומה מלמטה</span></div><div><b>A</b><span>תא</span></div></div>
+    <p class="small-muted">L שמאל · R ימין · B קיר אחורי · M ארון מגירות · C ארון בכניסה. המדפים עומדים בשורות, שניים גב אל גב: מספר אי־זוגי פונה לכניסה, והזוגי שאחריו הוא גב אותה שורה. תא A הוא הקרוב לשביל הראשי.</p></div>
+  <div><h3>אזורים במחסן</h3><div class="zones">${Object.entries(zones).map(([b,ids])=>`<button class="zone" data-unit="${ids[0]}" ${cssC(b)}><i></i>${BRANDS[b].label}<span class="code">${ids.length>1?ids[0]+'…':ids[0]}</span></button>`).join('')}
+    <button class="zone" data-unit="C-01" ${cssC('GEN')}><i></i>ארון בכניסה<span class="code">C-01</span></button>
+    <button class="zone" data-unit="M-01" ${cssC('GEN')}><i></i>ארון מגירות<span class="code">M-01</span></button></div></div>`;
 }
-function resultsHTML(list,q){
+function resultsHTML(){
+  const list=state.list||[], isSearch=state.listTitle==='search', notFound=!list.length&&isSearch;
+  const title=isSearch?(list.length?`${list.length} תוצאות`:'לא נמצא'):state.listTitle;
   return `<button class="back" data-home>→ חזרה</button>
-  <div><p class="eyebrow">תוצאות חיפוש</p><h2>${list.length?`${list.length} פריטים`:'לא נמצא'}</h2>
-  ${list.length?'':`<p class="lead">אין פריט עם המק״ט <span class="code">${esc(q)}</span>. בדוק שאין טעות הקלדה, או חפש לפי שם (למשל "מסנן שמן").</p>`}</div>
-  <div class="results">${list.slice(0,40).map(row).join('')}</div>`;
+  <div><p class="eyebrow">${isSearch?'תוצאות חיפוש':'רשימה'}</p><h2>${esc(title)}</h2>
+  ${notFound?`<p class="lead">אין פריט עם המק״ט <span class="code">${esc(state.q)}</span>. בדוק שאין טעות הקלדה, או חפש לפי שם, למשל "מסנן שמן".</p>`:''}
+  ${!list.length&&!isSearch?'<p class="lead">אין פריטים ברשימה הזו.</p>':''}</div>
+  ${notFound&&canWrite&&!dataProblem?`<button class="btn primary" data-act="newq">+ הוסף את <span class="code">${esc(state.q)}</span> כפריט חדש</button>`:''}
+  <div class="results">${list.slice(0,80).map(row).join('')}</div>
+  ${list.length>80?`<p class="hint">מוצגים 80 מתוך ${list.length}. חדד את החיפוש.</p>`:''}`;
 }
-const where=u=>u.row?`${SIDE_HE[u.side]} · שורה ${u.row} · ${u.face?'צד אחורי':'פונה לכניסה'}`:SIDE_HE[u.side];
-function unitHTML(u,sel){
+function unitHTML(){
+  const sel=curItem(), u=sel?unitById[sel.unit]:state.unit, edit=canWrite&&!dataProblem;
+  let card='';
+  if(sel){
+    resolveNames([sel.updatedBy]);
+    const q=state.qtyDraft??sel.qty, dirty=state.qtyDraft!==null&&state.qtyDraft!==sel.qty;
+    card=`<div class="card">
+      <div class="card-top"><span class="pill" ${cssC(sel.brand)}>${BRANDS[sel.brand].label}</span><span class="code sku">${esc(sel.sku)}</span>${sel.demo?'<span class="q warn">דוגמה</span>':''}</div>
+      <div class="name">${esc(sel.name)}</div>
+      <div class="bigloc">${sel.valid?`<span class="code" id="locCode">${sel.loc}</span><button type="button" data-act="copy">העתק</button>`:`<span class="code none">המיקום הרשום (${esc(sel.unit||'ריק')}) לא קיים במפה</span>`}</div>
+      ${sel.valid?`<div class="facts"><span>${where(u)}</span><span>קומה <b>${sel.level}</b></span><span>תא <b>${LETTERS[sel.slot]}</b></span></div>`:''}
+      <div class="qtyrow">${edit?`<div class="stepper"><button type="button" data-act="dec" aria-label="פחות">−</button><input id="qtyIn" type="number" inputmode="numeric" min="0" value="${q}" aria-label="כמות במלאי"><button type="button" data-act="inc" aria-label="יותר">+</button></div>
+        ${dirty?'<button class="btn primary small" data-act="saveqty">שמור כמות</button>':`<span class="q ${qtyClass(sel.qty)}">${qtyText(sel.qty)}</span>`}`
+        :`<span class="q ${qtyClass(sel.qty)}" style="font-size:14px;padding:3px 12px">${qtyText(sel.qty)}</span>`}</div>
+      ${sel.note?`<div class="meta">הערה: ${esc(sel.note)}</div>`:''}
+      ${sel.updatedAt?`<div class="meta">עודכן ${ago(sel.updatedAt)}${sel.updatedBy?` · ${esc(nameOf(sel.updatedBy))}`:''}</div>`:''}
+      ${edit?'<div class="actions"><button class="btn small" data-act="edit">עריכה / העברת מיקום</button></div>':''}
+    </div>`;
+  }
+  if(!u)return `<button class="back" data-home>→ חזרה</button>${card}`;
   const lv=[];
   for(let l=u.levels.length;l>=1;l--){
     const cells=[];
     for(let s=0;s<u.slots;s++){
-      const here=items.filter(i=>i.unit===u&&i.level===l&&i.slot===s);
-      const on=sel&&sel.level===l&&sel.slot===s;
-      cells.push(`<div class="cell${on?' on':''}"><span>${LETTERS[s]}</span>${here.map(i=>`<button class="it${sel===i?' on':''}" data-sku="${esc(i.sku)}" ${cssC(i.brand)} title="${esc(i.name)}"><b>${esc(i.name)}</b><span class="code">${esc(i.sku)}</span></button>`).join('')}</div>`);
+      const here=items.filter(i=>i.valid&&i.unit===u.id&&i.level===l&&i.slot===s);
+      const on=sel&&sel.valid&&sel.level===l&&sel.slot===s;
+      cells.push(`<div class="cell${on?' on':''}"><span>${LETTERS[s]}</span>${here.map(i=>`<button class="it${sel===i?' on':''}" data-sku="${esc(i.key)}" ${cssC(i.brand)} title="${esc(i.name)}"><b>${esc(i.name)}</b><span class="code">${esc(i.sku)}</span></button>`).join('')}</div>`);
     }
-    lv.push(`<div class="lvl${sel&&sel.level===l?' on':''}"><div class="lvl-n"><b>${l}</b>קומה</div><div class="cells" style="--n:${u.slots}">${cells.join('')}</div></div>`);
+    lv.push(`<div class="lvl${sel&&sel.valid&&sel.level===l?' on':''}"><div class="lvl-n"><b>${l}</b>קומה</div><div class="cells" style="--n:${u.slots}">${cells.join('')}</div></div>`);
   }
-  const card=sel?`<div class="card">
-    <div class="card-top"><span class="pill" ${cssC(sel.brand)}>${BRANDS[sel.brand].label}</span><span class="code sku">${esc(sel.sku)}</span></div>
-    <div class="name">${esc(sel.name)}</div>
-    <div class="bigloc"><span class="code" id="locCode">${sel.loc}</span><button type="button" id="copyLoc">העתק</button></div>
-    <div class="facts"><span>${where(u)}</span><span>מדף <b>${u.id}</b></span><span>קומה <b>${sel.level}</b></span><span>תא <b>${LETTERS[sel.slot]}</b></span><span>במלאי <b>${sel.qty}</b></span></div>
-  </div>`:'';
-  const count=items.filter(i=>i.unit===u).length;
+  const count=items.filter(i=>i.valid&&i.unit===u.id).length;
   return `<button class="back" data-home>→ חזרה</button>${card}
   <div><p class="eyebrow">${where(u)} · ${count} פריטים</p><h2>מדף <span class="code">${u.id}</span></h2></div>
-  <div class="shelf">${lv.join('')}</div>`;
+  <div class="shelf">${lv.join('')}</div>
+  ${edit&&!sel?`<button class="btn" data-act="newhere">+ הוספת פריט למדף הזה</button>`:''}`;
+}
+function formHTML(){
+  const f=state.form, u=unitById[f.unit];
+  const groups=[['L','צד שמאל'],['R','צד ימין'],['B','קיר אחורי'],['C','ארון בכניסה'],['M','ארון מגירות']];
+  const dup=f.mode==='add'&&f.sku.trim()&&byKey[keyOf(f.sku)];
+  return `<button class="back" data-act="cancel">→ ביטול</button>
+  <div><p class="eyebrow">${f.mode==='add'?'פריט חדש':'עריכת פריט'}</p><h2>${f.mode==='add'?'הוספה למלאי':`<span class="code">${esc(f.sku)}</span>`}</h2></div>
+  <form class="form" id="itemForm" novalidate>
+    <div class="field"><label for="f_sku">מק״ט</label><input type="text" id="f_sku" class="code" value="${esc(f.sku)}" ${f.mode==='edit'?'readonly':''} autocomplete="off" spellcheck="false" placeholder="למשל 5801592275"></div>
+    ${dup?`<p class="ferr">המק״ט כבר קיים במלאי, במיקום ${esc(dup.loc||dup.unit)}. <button type="button" class="btn small" data-act="editdup">ערוך אותו</button></p>`:''}
+    <div class="field"><label for="f_name">שם הפריט</label><input type="text" id="f_name" value="${esc(f.name)}" placeholder="למשל מסנן שמן"></div>
+    <div class="field"><span class="lab">יצרן</span><div class="seg brands">${Object.entries(BRANDS).map(([k,b])=>`<button type="button" data-brand="${k}" aria-pressed="${f.brand===k}" style="--c:${b.c}"><i></i>${b.label}</button>`).join('')}</div></div>
+    <div class="field"><label for="f_unit">מדף</label><select id="f_unit"><option value="">בחר מדף…</option>${groups.map(([s,t])=>`<optgroup label="${t}">${units.filter(x=>x.side===s).map(x=>`<option value="${x.id}" ${x.id===f.unit?'selected':''}>${x.id}${x.row?` · שורה ${x.row} · ${x.face?'גב':'חזית'}`:''}</option>`).join('')}</optgroup>`).join('')}</select>
+      <p class="hint">אפשר גם ללחוץ על המדף במודל.</p></div>
+    ${u?`<div class="field"><span class="lab">קומה (1 = התחתונה)</span><div class="seg">${u.levels.map((_,i)=>`<button type="button" data-level="${i+1}" aria-pressed="${f.level===i+1}">${i+1}</button>`).join('')}</div></div>
+    <div class="field"><span class="lab">תא (A = הקרוב לשביל)</span><div class="seg">${Array.from({length:u.slots},(_,s)=>`<button type="button" data-slot="${s}" aria-pressed="${f.slot===s}">${LETTERS[s]}</button>`).join('')}</div></div>
+    <div class="preview"><span class="hint">המיקום:</span><span class="code">${u.id}-${f.level}-${LETTERS[f.slot]}</span></div>`:''}
+    <div class="field"><label for="f_qty">כמות במלאי</label><div class="stepper" style="align-self:flex-start"><button type="button" data-act="fdec" aria-label="פחות">−</button><input id="f_qty" type="number" inputmode="numeric" min="0" value="${esc(f.qty)}"><button type="button" data-act="finc" aria-label="יותר">+</button></div></div>
+    <div class="field"><label for="f_note">הערה (לא חובה)</label><textarea id="f_note" placeholder="למשל: מתאים גם לדגם יורוקרגו">${esc(f.note)}</textarea></div>
+    ${f.err?`<p class="ferr">${esc(f.err)}</p>`:''}
+    <div class="actions"><button type="submit" class="btn primary grow" ${state.busy?'disabled':''}>${state.busy?'שומר…':f.mode==='add'?'הוסף למלאי':'שמור שינויים'}</button>
+      ${f.mode==='edit'?`<button type="button" class="btn danger${f.delArm?' armed':''}" data-act="del">${f.delArm?'לחץ שוב למחיקה':'מחק'}</button>`:''}</div>
+  </form>`;
+}
+function logHTML(){
+  return `<button class="back" data-home>→ חזרה</button>
+  <div><p class="eyebrow">יומן</p><h2>פעילות במחסן</h2><p class="lead">60 השינויים האחרונים: מי הוסיף, העביר או עדכן כמות.</p></div>
+  ${logEntries.length?logRows(logEntries):'<p class="hint">עדיין אין פעילות.</p>'}`;
 }
 function render(){
-  body.innerHTML=state.view==='home'?homeHTML():state.view==='results'?resultsHTML(search(state.q),state.q):unitHTML(state.unit,state.item);
-  body.scrollTop=0;
+  const v=state.view;
+  body.innerHTML=v==='home'?homeHTML():v==='results'?resultsHTML():v==='unit'?unitHTML():v==='form'?formHTML():logHTML();
 }
+function renderKeepScroll(){const s=body.scrollTop;render();body.scrollTop=s;}
+
+/* =========================================================
+   Writes
+   ========================================================= */
+function openForm(mode,base={}){
+  const it=mode==='edit'?curItem():null;
+  state.form=it?{mode,key:it.key,sku:it.sku,name:it.name,brand:it.brand,unit:it.valid?it.unit:'',level:it.level||1,slot:it.slot||0,qty:it.qty,note:it.note,orig:it}
+    :{mode:'add',sku:'',name:'',brand:'GEN',unit:'',level:1,slot:0,qty:1,note:'',...base};
+  state.view='form'; render(); openPanel(); body.scrollTop=0; syncFormHighlight(true);
+}
+function syncFormHighlight(fly){
+  const f=state.form, u=unitById[f.unit];
+  if(!u){showHighlight(null);return;}
+  showHighlight(u,{level:f.level,slot:f.slot}); if(fly)focusCell(u,f.level,f.slot);
+}
+async function submitForm(){
+  const f=state.form;
+  f.sku=f.sku.trim(); f.name=f.name.trim();
+  const qty=Math.max(0,Math.round(+f.qty||0));
+  f.err=!f.sku?'חסר מק״ט.':!f.name?'חסר שם פריט.':!f.unit?'בחר מדף.':(f.mode==='add'&&byKey[keyOf(f.sku)])?'המק״ט כבר קיים במלאי.':'';
+  if(f.err){renderKeepScroll();return;}
+  const loc=`${f.unit}-${f.level}-${LETTERS[f.slot]}`;
+  const doc={sku:f.sku,name:f.name,brand:f.brand,unit:f.unit,level:f.level,slot:f.slot,qty,note:f.note.trim(),updatedAt:Date.now(),updatedBy:myId};
+  const key=f.mode==='add'?keyOf(f.sku):f.key;
+  state.busy=true; renderKeepScroll();
+  try{
+    await db.collection('items').doc(key).set(doc);
+    if(f.mode==='add')await addLog('add',f.sku,`${f.name} · ${loc} · ${qty} יח׳`);
+    else{
+      const o=f.orig, moved=o.loc!==loc, qd=o.qty!==qty;
+      await addLog(moved?'move':qd?'qty':'edit',f.sku,moved?`מ־${o.loc||'—'} ל־${loc}`:qd?`מ־${o.qty} ל־${qty} יח׳`:'פרטי הפריט עודכנו');
+    }
+    state.busy=false; state.form=null;
+    toast(f.mode==='add'?`נוסף למלאי ב־${loc}`:'נשמר');
+    // the store echoes the write back through the snapshot; open the item once it arrives
+    state.pendingKey=key; state.view='unit'; state.unit=unitById[f.unit]; state.itemKey=null; render();
+  }catch(e){state.busy=false;renderKeepScroll();writeFailed(e);}
+}
+async function deleteItem(){
+  const f=state.form; state.busy=true; renderKeepScroll();
+  try{await db.collection('items').doc(f.key).delete(); await addLog('del',f.sku,f.name); state.busy=false; state.form=null; toast('הפריט נמחק'); goHome();}
+  catch(e){state.busy=false;renderKeepScroll();writeFailed(e);}
+}
+async function saveQty(){
+  const it=curItem(), q=Math.max(0,Math.round(+state.qtyDraft||0));
+  try{await db.collection('items').doc(it.key).update({qty:q,updatedAt:Date.now(),updatedBy:myId}); await addLog('qty',it.sku,`מ־${it.qty} ל־${q} יח׳`); state.qtyDraft=null; toast('הכמות עודכנה'); renderKeepScroll();}
+  catch(e){writeFailed(e);}
+}
+async function deleteDemo(){
+  const demo=items.filter(i=>i.demo); state.busy=true; renderKeepScroll();
+  try{for(const it of demo)await db.collection('items').doc(it.key).delete(); await addLog('del','דוגמה',`${demo.length} פריטי דוגמה נמחקו`); toast('פריטי הדוגמה נמחקו');}
+  catch(e){writeFailed(e);}
+  state.busy=false; state.demoArm=false; renderKeepScroll();
+}
+async function exportCsv(){
+  const head=['מק"ט','שם','יצרן','מיקום','מדף','קומה','תא','כמות','הערה','עודכן'];
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const rows=[...items].sort((a,b)=>(a.loc||'').localeCompare(b.loc||'')).map(i=>[i.sku,i.name,BRANDS[i.brand].label,i.loc||'',i.unit,i.level,LETTERS[i.slot]||'',i.qty,i.note,i.updatedAt?new Date(i.updatedAt).toLocaleDateString('he-IL'):''].map(q).join(','));
+  const csv='﻿'+[head.map(q).join(','),...rows].join('\r\n');
+  try{await downloads.save({filename:`warehouse-${new Date().toISOString().slice(0,10)}.csv`,data:csv});}
+  catch(e){if(e?.code!=='declined')toast('ההורדה לא זמינה כאן.');}
+}
+
+/* =========================================================
+   Events
+   ========================================================= */
 body.addEventListener('click',e=>{
-  const t=e.target.closest('button'); if(!t)return;
+  const t=e.target.closest('button'); if(!t||t.disabled)return;
+  const a=t.dataset.act;
   if(t.dataset.home!==undefined)return goHome();
-  if(t.dataset.sku){const it=items.find(i=>i.sku===t.dataset.sku); if(it)selectItem(it);}
-  else if(t.dataset.unit)selectUnit(unitById[t.dataset.unit]);
-  else if(t.id==='copyLoc'){
-    const txt=state.item.loc;
-    const ok=()=>toast(`המיקום ${txt} הועתק`);
-    try{navigator.clipboard.writeText(txt).then(ok,()=>selectText());}catch{selectText();}
+  if(state.view==='form'){
+    const f=state.form;
+    if(t.dataset.brand){f.brand=t.dataset.brand;return renderKeepScroll();}
+    if(t.dataset.level){f.level=+t.dataset.level;renderKeepScroll();return syncFormHighlight(true);}
+    if(t.dataset.slot){f.slot=+t.dataset.slot;renderKeepScroll();return syncFormHighlight(false);}
+    if(a==='fdec'||a==='finc'){f.qty=Math.max(0,(Math.round(+f.qty)||0)+(a==='finc'?1:-1));return renderKeepScroll();}
+    if(a==='cancel'){const k=f.key;state.form=null;if(k&&byKey[k])return selectItem(byKey[k]);return goHome();}
+    if(a==='del'){if(!f.delArm){f.delArm=true;return renderKeepScroll();}return deleteItem();}
+    if(a==='editdup'){state.itemKey=keyOf(f.sku);return openForm('edit');}
+    return;
+  }
+  if(t.dataset.sku){const it=byKey[t.dataset.sku]; if(it)selectItem(it); return;}
+  if(t.dataset.unit)return selectUnit(unitById[t.dataset.unit]);
+  if(a==='new')return openForm('add');
+  if(a==='newq')return openForm('add',{sku:state.q});
+  if(a==='newhere')return openForm('add',{unit:state.unit.id});
+  if(a==='edit')return openForm('edit');
+  if(a==='all')return showList([...items].sort((x,y)=>(x.loc||'').localeCompare(y.loc||'')),'כל המלאי');
+  if(a==='out')return showList(items.filter(i=>i.qty<=0),'פריטים שאזלו');
+  if(a==='low')return showList(items.filter(i=>i.qty>0&&i.qty<=2),'מלאי נמוך');
+  if(a==='bad')return showList(items.filter(i=>!i.valid),'מיקום לא קיים במפה');
+  if(a==='log'){state.view='log';render();body.scrollTop=0;return;}
+  if(a==='csv')return exportCsv();
+  if(a==='demo'){if(!state.demoArm){state.demoArm=true;return renderKeepScroll();}return deleteDemo();}
+  if(a==='dec'||a==='inc'){const it=curItem();state.qtyDraft=Math.max(0,(state.qtyDraft??it.qty)+(a==='inc'?1:-1));return renderKeepScroll();}
+  if(a==='saveqty')return saveQty();
+  if(a==='copy'){
+    const txt=curItem()?.loc; if(!txt)return;
+    try{navigator.clipboard.writeText(txt).then(()=>toast(`המיקום ${txt} הועתק`),selectLoc);}catch{selectLoc();}
   }
 });
-function selectText(){const el=document.getElementById('locCode');const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('המיקום מסומן, אפשר להעתיק');}
-let toastT; function toast(m){const el=document.getElementById('toast');el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,1800);}
+body.addEventListener('input',e=>{
+  const t=e.target;
+  if(state.view==='form'){
+    const f=state.form;
+    if(t.id==='f_sku'){
+      const had=!!(f.mode==='add'&&f.sku.trim()&&byKey[keyOf(f.sku)]); f.sku=t.value;
+      const has=!!(f.mode==='add'&&f.sku.trim()&&byKey[keyOf(f.sku)]);
+      if(had!==has){const pos=t.selectionStart;renderKeepScroll();const n=document.getElementById('f_sku');n.focus();n.setSelectionRange(pos,pos);}
+    }
+    else if(t.id==='f_name')f.name=t.value;
+    else if(t.id==='f_qty')f.qty=t.value;
+    else if(t.id==='f_note')f.note=t.value;
+  }else if(t.id==='qtyIn'){
+    state.qtyDraft=Math.max(0,Math.round(+t.value||0));
+    const it=curItem(), changed=state.qtyDraft!==it.qty, shown=!!body.querySelector('[data-act="saveqty"]');
+    if(changed!==shown){renderKeepScroll();const n=document.getElementById('qtyIn');n.focus();}
+  }
+});
+body.addEventListener('change',e=>{
+  if(state.view==='form'&&e.target.id==='f_unit'){
+    const f=state.form; f.unit=e.target.value; const u=unitById[f.unit];
+    if(u){f.level=Math.min(f.level,u.levels.length);f.slot=Math.min(f.slot,u.slots-1);}
+    renderKeepScroll(); syncFormHighlight(true);
+  }
+});
+body.addEventListener('submit',e=>{e.preventDefault();if(e.target.id==='itemForm'&&!state.busy)submitForm();});
+function selectLoc(){const el=document.getElementById('locCode');if(!el)return;const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('המיקום מסומן, אפשר להעתיק');}
+let toastT; function toast(m){const el=document.getElementById('toast');el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2600);}
 
+const qIn=document.getElementById('q');
 document.getElementById('searchForm').addEventListener('submit',e=>{
-  e.preventDefault(); const q=document.getElementById('q').value.trim(); if(!q)return goHome();
-  const list=search(q); document.getElementById('q').blur();
+  e.preventDefault(); const q=qIn.value.trim(); if(!q)return goHome();
+  if(state.view==='form')state.form=null;
+  const list=search(q); qIn.blur(); state.q=q;
   if(list.length===1)return selectItem(list[0]);
-  state.q=q;state.view='results';render();openPanel();
+  showList(list,'search');
 });
-document.getElementById('q').addEventListener('input',e=>{
-  const q=e.target.value.trim(); if(q.length<2)return;
-  state.q=q; state.view='results'; render();
+qIn.addEventListener('input',()=>{
+  const q=qIn.value.trim(); if(state.view==='form')return;
+  if(q.length<2){if(state.view==='results'&&state.listTitle==='search')goHome();return;}
+  state.q=q; showList(search(q),'search');
 });
-
-// chips
-const chips=document.getElementById('chips');
-chips.innerHTML=Object.entries(BRANDS).map(([k,b])=>`<button class="chip" data-b="${k}" aria-pressed="false" style="--c:${b.c}"><i></i>${b.label}<small>${items.filter(i=>i.brand===k).length}</small></button>`).join('');
 chips.addEventListener('click',e=>{
   const c=e.target.closest('.chip'); if(!c)return;
   state.brand=state.brand===c.dataset.b?null:c.dataset.b;
@@ -490,28 +954,34 @@ document.getElementById('vOver').onclick=VIEWS.over;
 document.getElementById('vDoor').onclick=VIEWS.door;
 document.getElementById('handle').onclick=()=>{panel.classList.toggle('min');viewOffset();};
 function openPanel(){panel.classList.remove('min');requestAnimationFrame(viewOffset);}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&state.view!=='home'&&!state.busy)goHome();});
 
-// picking
+// 3D picking
 const ray=new THREE.Raycaster(), ptr=new THREE.Vector2(); let down=null;
 canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
 canvas.addEventListener('pointerup',e=>{
   if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6)return; down=null;
   const r=canvas.getBoundingClientRect(); ptr.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
-  ray.setFromCamera(ptr,camera); const hit=ray.intersectObjects(pickables,false)[0];
+  ray.setFromCamera(ptr,camera);
+  const hit=ray.intersectObjects(units.map(u=>u.group),true).find(h=>h.object.isMesh&&h.object.userData.unit);
   if(!hit)return; const {item,unit}=hit.object.userData;
+  if(state.view==='form'){
+    const f=state.form; f.unit=unit.id;
+    if(item&&item.unit===unit.id){f.level=item.level;f.slot=item.slot;}
+    else{f.level=Math.min(f.level,unit.levels.length);f.slot=Math.min(f.slot,unit.slots-1);}
+    renderKeepScroll(); syncFormHighlight(true); return;
+  }
   if(item&&(!state.brand||item.brand===state.brand))selectItem(item); else selectUnit(unit);
 });
 
 // layout
 function layout(){
-  const bar=document.getElementById('bar').getBoundingClientRect();
-  const app=document.getElementById('app');
+  const bar=document.getElementById('bar').getBoundingClientRect(), app=document.getElementById('app');
   app.style.setProperty('--chips-top',bar.height+'px');
   app.style.setProperty('--panel-top',(bar.height+44)+'px');
   app.style.setProperty('--views-top',(bar.height+48)+'px');
   const w=canvas.clientWidth,h=canvas.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; viewOffset();
 }
-// keep the focused shelf in the visible part of the screen, beside or above the panel
 function viewOffset(){
   const w=canvas.clientWidth,h=canvas.clientHeight,r=panel.getBoundingClientRect(),phone=innerWidth<=760;
   const dx=phone?0:Math.round(r.width/2), dy=phone&&!panel.classList.contains('min')?Math.round(r.height/2):0;
@@ -519,12 +989,14 @@ function viewOffset(){
 }
 addEventListener('resize',layout);
 
-/* ---------- Boot ---------- */
+/* =========================================================
+   Boot
+   ========================================================= */
 (async()=>{
   try{await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]);}catch{}
-  units.forEach(buildUnit); items.forEach(placeItem);
-  layout();
-  camera.position.set(9,13,5); controls.target.set(0,0,-6.5);
+  units.forEach(buildUnit);
+  refreshChips(); layout();
+  camera.position.copy(OVER[0]); controls.target.copy(OVER[1]);
   render(); document.getElementById('loading').hidden=true;
   const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
   renderer.setAnimationLoop(now=>{
@@ -533,6 +1005,7 @@ addEventListener('resize',layout);
     if(hlGroup.visible)hlFill.material.opacity=.12+.1*(0.5+0.5*Math.sin(now/260));
     controls.update(); renderer.render(scene,camera);
   });
+  initData();
 })();
 </script>
 </body></html>
