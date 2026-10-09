@@ -281,7 +281,8 @@ for(const side of ['L','R']){
 }
 const backZ=-(START+ROWS*PITCH)-0.9;
 [-1.95,0,1.95].forEach((x,i)=>units.push({id:`B-0${i+1}`,side:'B',type:'rack',x,z:backZ,rot:0,w:1.8,d:0.6,h:2.15,levels:[0.1,0.5,0.9,1.3,1.7],slots:4,binLevels:[1,2,3,4,5]}));
-units.push({id:'M-01',side:'M',type:'drawers',x:-(AISLE/2+0.225),z:-0.6,rot:Math.PI/2,w:0.9,d:0.45,h:1.6,levels:[0.55,0.76,0.97,1.18,1.39],slots:4});
+// drawer cabinet in the front-left corner, against the left wall, facing L-01
+units.push({id:'M-01',side:'M',type:'drawers',x:-(AISLE/2+RL+0.45)+0.09+0.47,z:0.6-0.09-0.245,rot:Math.PI,w:0.9,d:0.45,h:1.6,levels:[0.55,0.76,0.97,1.18,1.39],slots:4});
 units.push({id:'C-01',side:'C',type:'cabinet',x:(AISLE/2+0.25),z:-0.75,rot:-Math.PI/2,w:1.0,d:0.5,h:2.0,levels:[0.08,0.55,1.02,1.49],slots:2});
 const unitById=Object.fromEntries(units.map(u=>[u.id,u]));
 const SIDE_HE={L:'צד שמאל',R:'צד ימין',B:'קיר אחורי',M:'ארון מגירות',C:'ארון בכניסה מימין'};
@@ -571,7 +572,7 @@ function focusCell(u,level,slot){
   const normal=new THREE.Vector3(0,0,1).applyQuaternion(u.group.quaternion);
   const up=Math.max(1.6,3.5-target.y);
   const off=u.row?new THREE.Vector3(u.side==='L'?1.9:-1.9,up,0).addScaledVector(normal,1.3)
-    :normal.clone().multiplyScalar(u.side==='B'?3.0:2.0).add(new THREE.Vector3(0,up*0.8,u.side==='B'?0.3:1.2));
+    :normal.clone().multiplyScalar(u.side==='B'?3.0:2.0).add(new THREE.Vector3(u.side==='M'?0.9:0,up*0.8,u.side==='C'?1.2:0.3));
   if(camera.aspect<1)off.multiplyScalar(1.6); // narrow phone view: step back
   moveCam(target.clone().add(off),target);
 }
