@@ -270,8 +270,8 @@ input[type=file]{color:var(--muted);font-size:14px}
     <form class="login-box" id="loginForm">
       <div class="mark" aria-hidden="true"></div>
       <h2>מחסן מטיילי עירון</h2>
-      <p>כניסה עם סיסמת המוסך, כמו בלוח הרכבים. פעם אחת בכל מכשיר.</p>
-      <label>סיסמת המוסך<input id="loginPass" type="password" autocomplete="current-password" required dir="ltr"></label>
+      <p>כניסה עם סיסמת המחסן. פעם אחת בכל מכשיר.</p>
+      <label>סיסמת המחסן<input id="loginPass" type="password" autocomplete="current-password" required dir="ltr"></label>
       <label>השם שלך (יופיע ליד כל עדכון)<input id="loginName" autocomplete="name" placeholder="לדוגמה: שגיא"></label>
       <p class="ferr" id="loginErr"></p>
       <button class="btn primary" id="loginBtn" type="submit">כניסה</button>
@@ -279,7 +279,7 @@ input[type=file]{color:var(--muted);font-size:14px}
   </section>
 </div>
 
-<script src="../config.js"></script>
+<script src="config.js"></script>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
 </script>
@@ -649,7 +649,7 @@ const curItem=()=>state.itemKey?byKey[state.itemKey]:null;
 function resolveNames(){}
 const nameOf=id=>id||'מישהו';
 
-/* ---------- Firebase: same project and garage password as the vehicle board (../config.js) ---------- */
+/* ---------- Firebase: its own project, set in config.js ---------- */
 const cfg=window.FIREBASE_CONFIG;
 // Offline, Firestore keeps the write on the device and sends it when the connection returns,
 // so don't leave the button spinning: wait at most a few seconds for the server.
@@ -690,9 +690,9 @@ function initData(){
   db={collection:p=>fsColl(p)};
   onAuthStateChanged(fauth,u=>{
     unsubs.forEach(f=>f()); unsubs=[];
-    if(!u){canWrite=false;document.getElementById('login').hidden=false;document.getElementById('loginName').value=store.get('garageUser');return;}
+    if(!u){canWrite=false;document.getElementById('login').hidden=false;document.getElementById('loginName').value=store.get('warehouseUser');return;}
     document.getElementById('login').hidden=true;
-    canWrite=true; dataProblem=null; myId=store.get('garageUser')||'לא ידוע'; updateMe();
+    canWrite=true; dataProblem=null; myId=store.get('warehouseUser')||'לא ידוע'; updateMe();
     unsubs.push(db.collection(ITEMS).onSnapshot(snap=>{
       setConn(!snap.metadata.fromCache);
       items=snap.docs.map(d=>normalizeItem(d.id,d.data())); byKey=Object.fromEntries(items.map(i=>[i.key,i]));
@@ -714,7 +714,7 @@ document.getElementById('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const err=document.getElementById('loginErr'), btn=document.getElementById('loginBtn'); err.textContent=''; btn.disabled=true;
   try{
-    const nm=document.getElementById('loginName').value.trim(); if(nm)store.set('garageUser',nm);
+    const nm=document.getElementById('loginName').value.trim(); if(nm)store.set('warehouseUser',nm);
     await signInWithEmailAndPassword(fauth,window.GARAGE_LOGIN_EMAIL,document.getElementById('loginPass').value);
     document.getElementById('loginPass').value='';
   }catch(x){
@@ -1046,7 +1046,7 @@ body.addEventListener('click',e=>{
   if(a==='import'){state.imp=state.imp||{};state.view='import';render();body.scrollTop=0;return openPanel();}
   if(a==='doimport')return doImport();
   if(a==='seed')return seedDemo();
-  if(a==='savename'){const v=document.getElementById('meInput').value.trim();if(v){store.set('garageUser',v);myId=v;updateMe();toast('השם נשמר');}return goHome();}
+  if(a==='savename'){const v=document.getElementById('meInput').value.trim();if(v){store.set('warehouseUser',v);myId=v;updateMe();toast('השם נשמר');}return goHome();}
   if(a==='logout'){signOut(fauth);return goHome();}
   if(a==='new')return openForm('add');
   if(a==='newq')return openForm('add',{sku:state.q});
