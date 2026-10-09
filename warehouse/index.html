@@ -313,6 +313,8 @@ const LETTERS='ABCD';
 // Racks per row on each side, entrance first: 2 = back to back, 1 = a single rack.
 // Left: 14 racks (7 rows). Right: 9 racks (4 rows + one single rack).
 const SIDE_ROWS={L:[2,2,2,2,2,2,2],R:[2,2,2,2,1]};
+// Right side stands at the back, next to B-03; the area by the entrance is empty.
+const SIDE_ALIGN={L:'front',R:'back'};
 const RL=3.0, RD=0.5, AISLE=1.8, SIDE_AISLE=1.4, START=1.6, PITCH=2*RD+SIDE_AISLE;
 const ROWS=Math.max(SIDE_ROWS.L.length,SIDE_ROWS.R.length);
 const RACK_LEVELS=[0.12,0.6,1.08,1.56,2.04];
@@ -322,7 +324,8 @@ for(const side of ['L','R']){
   const x=(side==='L'?-1:1)*(AISLE/2+RL/2);
   let n=0;
   SIDE_ROWS[side].forEach((faces,r)=>{
-    const zc=-(START+RD+r*PITCH);
+    const pos=r+(SIDE_ALIGN[side]==='back'?ROWS-SIDE_ROWS[side].length:0);
+    const zc=-(START+RD+pos*PITCH);
     const spots=faces===2?[[0,zc+RD/2],[Math.PI,zc-RD/2]]:[[0,zc]];
     spots.forEach(([rot,z],f)=>{
       const id=`${side}-${String(++n).padStart(2,'0')}`;
