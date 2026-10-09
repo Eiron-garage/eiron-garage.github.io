@@ -1,0 +1,528 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0">
+<title>מפת המחסן</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: full-bleed 3D warehouse; search bar floats on top, catalog panel docks to the right (bottom sheet on phones). Single committed dark "night shift" look. */
+:root{
+  --ground:#121416;      /* concrete at night */
+  --panel:#1a1d20;
+  --panel-2:#22262a;
+  --line:#30363b;
+  --ink:#ece8df;
+  --muted:#9aa2a9;
+  --hazard:#f5c518;      /* the yellow steel beams */
+  --hazard-ink:#1a1500;
+  --bin:#2f5bd3;
+  --f-display:'Karantina','IBM Plex Sans Hebrew',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans Hebrew',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --f-code:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;overflow:hidden}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.code{font-family:var(--f-code);direction:ltr;unicode-bidi:isolate;letter-spacing:.02em}
+
+#app{position:relative;height:100%;overflow:hidden}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+.bar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:14px 16px 10px;background:linear-gradient(var(--ground) 40%,transparent);pointer-events:none}
+.bar>*{pointer-events:auto}
+.title{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:34px;height:34px;flex:none;border-radius:4px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 7px,#111 7px 14px)}
+.title h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:38px;line-height:.9;letter-spacing:.01em}
+.title p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.search{flex:1 1 340px;display:flex;max-width:620px;margin-inline-start:auto;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.search:focus-within{border-color:var(--hazard)}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:13px 14px;font-size:17px;outline:none}
+.search input::placeholder{color:var(--muted)}
+.search button{border:0;background:var(--hazard);color:var(--hazard-ink);font-weight:600;padding:0 22px;font-size:16px}
+
+.chips{position:absolute;top:var(--chips-top,78px);right:16px;left:16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);font-size:13px;font-weight:500;letter-spacing:.04em}
+.chip i{width:9px;height:9px;border-radius:2px;background:var(--c)}
+.chip small{color:var(--muted);font-family:var(--f-code);font-size:11px}
+.chip[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 22%,var(--panel))}
+
+.panel{position:absolute;top:var(--panel-top,130px);right:16px;bottom:16px;width:min(390px,calc(100% - 32px));display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.panel-body{overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px}
+.handle{display:none}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:0 0 8px}
+.panel h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1;text-wrap:balance}
+.panel h3{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em}
+.lead{margin:6px 0 0;color:var(--muted)}
+.demo{border:1px dashed color-mix(in srgb,var(--hazard) 55%,transparent);color:color-mix(in srgb,var(--hazard) 85%,var(--ink));border-radius:10px;padding:10px 12px;font-size:13px}
+
+.try{display:flex;flex-wrap:wrap;gap:6px}
+.try button{border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:6px 10px;font-family:var(--f-code);font-size:13px;direction:ltr}
+.try button:hover{border-color:var(--hazard)}
+
+.key{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;direction:ltr;text-align:center}
+.key div{background:var(--panel-2);border-radius:8px;padding:8px 4px}
+.key b{display:block;font-family:var(--f-code);font-size:18px;color:var(--hazard)}
+.key span{font-size:11.5px;color:var(--muted);direction:rtl;display:block}
+
+.zones{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.zone{display:flex;align-items:center;gap:8px;text-align:start;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:8px 10px;font-size:13px}
+.zone i{width:10px;height:10px;border-radius:2px;background:var(--c);flex:none}
+.zone .code{margin-inline-start:auto;color:var(--muted);font-size:12px}
+
+.results{display:flex;flex-direction:column;gap:6px}
+.row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;text-align:start;border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:10px 12px}
+.row:hover{border-color:var(--hazard)}
+.row i{width:4px;align-self:stretch;border-radius:2px;background:var(--c)}
+.row .nm{min-width:0}
+.row .nm b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .nm .code{font-size:12.5px;color:var(--muted)}
+.row .loc{font-family:var(--f-code);font-size:13px;color:var(--hazard);direction:ltr}
+.empty{color:var(--muted)}
+
+.card{border:1.5px solid var(--hazard);border-radius:12px;padding:14px;background:color-mix(in srgb,var(--hazard) 7%,var(--panel-2));display:flex;flex-direction:column;gap:10px}
+.card-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;letter-spacing:.05em;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--ink);border:1px solid color-mix(in srgb,var(--c) 70%,transparent)}
+.card .sku{font-size:22px;font-weight:600}
+.card .name{font-size:17px}
+.bigloc{display:flex;align-items:stretch;gap:8px}
+.bigloc .code{flex:1;background:var(--hazard);color:var(--hazard-ink);font-size:30px;font-weight:600;border-radius:8px;padding:6px 12px;text-align:center}
+.bigloc button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:0 12px;font-size:13px}
+.facts{display:flex;gap:16px;color:var(--muted);font-size:13px;flex-wrap:wrap}
+.facts b{color:var(--ink);font-family:var(--f-code);font-weight:500}
+
+.shelf{display:flex;flex-direction:column;gap:5px}
+.lvl{display:grid;grid-template-columns:52px 1fr;gap:6px;align-items:stretch}
+.lvl-n{display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--panel-2);border-radius:6px;font-size:11px;color:var(--muted)}
+.lvl-n b{font-family:var(--f-code);font-size:16px;color:var(--ink)}
+.lvl.on .lvl-n{background:var(--hazard);color:var(--hazard-ink)}
+.lvl.on .lvl-n b{color:var(--hazard-ink)}
+.cells{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:4px;direction:ltr}
+.cell{min-height:52px;border:1px solid var(--line);border-radius:6px;padding:4px 5px;display:flex;flex-direction:column;gap:3px;background:color-mix(in srgb,var(--panel-2) 60%,transparent)}
+.cell>span{font-family:var(--f-code);font-size:10.5px;color:var(--muted)}
+.cell.on{border-color:var(--hazard);box-shadow:inset 0 0 0 1px var(--hazard)}
+.it{border:0;text-align:start;background:color-mix(in srgb,var(--c) 18%,var(--panel));border-inline-start:3px solid var(--c);border-radius:4px;padding:3px 5px;font-size:11.5px;line-height:1.25;direction:rtl;min-width:0}
+.it .code{display:block;font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it b{font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it.on{outline:2px solid var(--hazard)}
+.back{align-self:flex-start;border:0;background:none;color:var(--muted);padding:0;font-size:13px}
+.back:hover{color:var(--ink)}
+
+.views{position:absolute;left:16px;bottom:16px;display:flex;gap:6px}
+.views button{border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 90%,transparent);border-radius:8px;padding:8px 12px;font-size:13px}
+.views button:hover{border-color:var(--hazard)}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
+
+@media (max-width:760px){
+  .bar{gap:10px;padding:12px 16px 8px}
+  .title h1{font-size:30px}
+  .title p{display:none}
+  .mark{width:26px;height:26px}
+  .search{flex-basis:100%;margin:0}
+  .search input{padding:11px 12px}
+  .panel{top:auto;right:0;left:0;bottom:0;width:100%;max-height:52%;border-radius:16px 16px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .panel.min .panel-body{display:none}
+  .handle{display:flex;justify-content:center;align-items:center;gap:8px;border:0;background:none;padding:8px;color:var(--muted);font-size:12px}
+  .handle::before{content:"";width:40px;height:4px;border-radius:2px;background:var(--line)}
+  .views{left:auto;right:16px;bottom:auto;top:var(--views-top,150px);flex-direction:column}
+  .views button{padding:6px 10px;font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app">
+  <canvas id="scene" aria-label="מודל תלת־ממד של המחסן"></canvas>
+  <div class="loading" id="loading">טוען את המחסן…</div>
+
+  <header class="bar" id="bar">
+    <div class="title">
+      <div class="mark" aria-hidden="true"></div>
+      <div><h1>מפת המחסן</h1><p>איתור חלקים לפי מק״ט · משאיות ורכבי שטח</p></div>
+    </div>
+    <form class="search" id="searchForm" role="search">
+      <label class="sr" for="q">חיפוש לפי מק״ט או שם פריט</label>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="הקלד מק״ט או שם פריט">
+      <button type="submit">אתר</button>
+    </form>
+  </header>
+
+  <nav class="chips" id="chips" aria-label="סינון לפי יצרן"></nav>
+
+  <aside class="panel" id="panel">
+    <button class="handle" id="handle" type="button" aria-label="הצג או הסתר פרטים"></button>
+    <div class="panel-body" id="panelBody"></div>
+  </aside>
+
+  <div class="views">
+    <button type="button" id="vOver">מבט על</button>
+    <button type="button" id="vDoor">מהכניסה</button>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ---------- Brands ---------- */
+const BRANDS = {
+  IVECO:{label:'IVECO', c:'#4c8dff'},
+  DAF:  {label:'DAF',   c:'#e5484d'},
+  MAN:  {label:'MAN',   c:'#cfd6de'},
+  HINO: {label:'HINO',  c:'#ff8a3d'},
+  ISUZU:{label:'ISUZU', c:'#2ec4b6'},
+  JEEP: {label:'JEEP',  c:'#7bc96f'},
+  RAM:  {label:'RAM',   c:'#b48cff'},
+  GEN:  {label:'כללי',  c:'#c49a62'},
+};
+
+/* ---------- Warehouse layout (estimated, to be corrected) ---------- */
+const UW=1.8, UD=0.6, GAP=0.12, AISLE=1.8, START=1.4, PER_SIDE=7;
+const SIDE_HE={L:'צד שמאל',R:'צד ימין',B:'קיר אחורי',M:'ארון מגירות'};
+const units=[];
+const metalLevels=[0.1,0.58,1.06,1.54,2.02];
+for(let i=0;i<PER_SIDE;i++){
+  const z=-(START+i*(UW+GAP)+UW/2), n=String(i+1).padStart(2,'0');
+  units.push({id:`L-${n}`,side:'L',type:'metal',x:-(AISLE/2+UD/2),z,rot:Math.PI/2,w:UW,d:UD,h:2.4,levels:metalLevels,slots:3});
+  units.push({id:`R-${n}`,side:'R',type:'metal',x:(AISLE/2+UD/2),z,rot:-Math.PI/2,w:UW,d:UD,h:2.4,levels:metalLevels,slots:3,flip:true});
+}
+const backZ=-(START+PER_SIDE*(UW+GAP))-0.5-UD/2;
+[-1.95,0,1.95].forEach((x,i)=>units.push({id:`B-0${i+1}`,side:'B',type:'bins',x,z:backZ,rot:0,w:UW,d:UD,h:2.1,levels:[0.1,0.5,0.9,1.3,1.7],slots:4}));
+units.push({id:'M-01',side:'M',type:'drawers',x:-(AISLE/2+0.225),z:-0.6,rot:Math.PI/2,w:0.9,d:0.45,h:1.6,levels:[0.55,0.76,0.97,1.18,1.39],slots:4});
+const unitById=Object.fromEntries(units.map(u=>[u.id,u]));
+
+/* ---------- Demo catalog ---------- */
+const GROUPS=[
+ {b:'GEN',u:['L-01','L-02'],items:[['GEN-OIL-1540','שמן מנוע 15W-40 · 20 ליטר',12],['GEN-COOL-G12','נוזל קירור G12 · 5 ליטר',9],['GEN-DOT4','נוזל בלמים DOT4',14],['GEN-GRS-400','גריז ליתיום · שפופרת',20],['GEN-ATF-3','שמן גיר ATF',8],['GEN-ADB-10','AdBlue · 10 ליטר',10],['GEN-WD40','WD-40 ספריי',15],['GEN-CLN-BRK','מנקה בלמים ספריי',24]]},
+ {b:'IVECO',u:['L-03','L-04'],items:[['5801592275','מסנן שמן',14],['2997305','מסנן סולר',9],['504209107','מסנן אוויר',6],['5801415504','רפידות בלם קדמיות',8],['42555508','דיסק בלם קדמי',4],['504047496','משאבת מים',2],['5801500178','רצועת מנוע',7],['41211196','פנס אחורי שמאל',3],['504130460','חיישן לחץ שמן',5],['5801426862','בולם זעזועים אחורי',4],['500054655','מסנן מייבש אוויר',6],['42548178','ממסר מצתים',10]]},
+ {b:'DAF',u:['L-05','L-06'],items:[['1643070','מסנן שמן',12],['1397766','מסנן סולר',10],['1638061','מסנן אוויר',5],['1934398','רפידות בלם',6],['1640797','חיישן ABS',4],['1405418','מגב שמשה',8],['1694385','רצועת אלטרנטור',5],['2131553','מראה צד ימין',2],['1676355','מתג חלון חשמלי',3],['1928868','מסנן מייבש אוויר',4],['2022165','חיישן טמפרטורה',6]]},
+ {b:'MAN',u:['L-07'],items:[['51055017160','מסנן שמן',11],['51125030061','מסנן סולר',9],['81084050020','מסנן אוויר',4],['CU 32 001','מסנן מזגן MANN',7],['81508206087','רפידות בלם',6],['51065006069','משאבת מים',2],['81259016094','חיישן ABS',3],['51958010303','רצועת מנוע',5]]},
+ {b:'HINO',u:['R-01','R-02'],items:[['15607-2190','מסנן שמן',15],['23390-E0020','מסנן סולר',12],['17801-E0010','מסנן אוויר',6],['04495-E0110','רפידות בלם קדמיות',7],['16100-E0373','משאבת מים',2],['81550-E0010','פנס אחורי',3],['S1561-72220','רצועת מנוע',6],['89422-E0010','חיישן טמפרטורה',5],['48510-E0080','בולם זעזועים',4]]},
+ {b:'ISUZU',u:['R-03','R-04'],items:[['8-98018858-0','מסנן שמן',13],['8-98159693-0','מסנן סולר',10],['8-98140266-0','מסנן אוויר',5],['8-97367601-0','רפידות בלם',8],['8-97945185-0','חיישן מהירות',3],['8-97602049-0','משאבת מים',2],['8-98092301-0','רצועת מנוע',6],['8-98005556-0','מראה צד',2],['8-97328581-0','ממסר התנעה',4]]},
+ {b:'JEEP',u:['R-05'],items:[['68191349AA','מסנן שמן',18],['68257030AA','מסנן אוויר',7],['68144219AA','רפידות בלם קדמיות',6],['68079487AA','מסנן מזגן',9],['68225170AA','מצתים',16],['68100436AA','משאבת מים',2],['68376010AA','חיישן לחץ צמיגים',8]]},
+ {b:'RAM',u:['R-06'],items:[['68507598AA','מסנן שמן',10],['68233626AA','מסנן אוויר',5],['68052370AA','רפידות בלם',6],['68436216AA','מסנן סולר',7],['68283391AA','רצועת מנוע',4],['68193834AA','בולם זעזועים',4],['68170049AA','מגב שמשה',8]]},
+ {b:'GEN',u:['R-07'],items:[['GEN-HOSE-13','צינור לחץ 13 מ״מ · גליל',3],['GEN-HOSE-19','צינור מים 19 מ״מ · גליל',2],['GEN-BAT-100','מצבר 12V 100Ah',3],['GEN-WIRE-25','כבל חשמל 2.5 ממ״ר · גליל',4],['GEN-TIE-300','אזיקונים 300 מ״מ · שקית',30],['GEN-TAPE','סרט בידוד',40]]},
+ {b:'GEN',u:['B-01','B-02','B-03'],items:[['GEN-M8-30','בורג M8×30',400],['GEN-M10-40','בורג M10×40',250],['GEN-NUT-M8','אום M8',600],['GEN-NUT-M10','אום M10',400],['GEN-WSH-8','דסקית 8 מ״מ',800],['GEN-CLP-20','מהדק צינור 20–32',120],['GEN-CLP-40','מהדק צינור 40–60',80],['GEN-ORING','סט אורינגים',12],['GEN-CPLR','מחברי אוויר מהירים',40],['GEN-TERM','נעלי כבל',300],['GEN-SPLIT','פיני ביטחון',500],['GEN-RIVET','מסמרות שליפה',350]]},
+ {b:'GEN',u:['M-01'],items:[['GEN-H7-24','נורה H7 24V',36],['GEN-P21-24','נורה P21W 24V',60],['GEN-FUSE-15','פיוז 15A',120],['GEN-FUSE-30','פיוז 30A',90],['GEN-RLY-24','ממסר 24V חמישה פינים',22],['GEN-LED-SIDE','פנס צד LED',14],['GEN-FLSH','ממסר מהבהב 24V',8]]},
+];
+const LETTERS='ABCD';
+const items=[];
+for(const g of GROUPS){
+  const per=Math.ceil(g.items.length/g.u.length);
+  g.u.forEach((uid,ui)=>{
+    const u=unitById[uid]; let cell=0;
+    g.items.slice(ui*per,(ui+1)*per).forEach(([sku,name,qty])=>{
+      const level=Math.floor(cell/u.slots)+1, slot=cell%u.slots; cell++;
+      items.push({sku,name,qty,brand:g.b,unit:u,level,slot,loc:`${u.id}-${level}-${LETTERS[slot]}`,meshes:[]});
+    });
+  });
+}
+for(const u of units){
+  const counts={}; items.filter(i=>i.unit===u).forEach(i=>counts[i.brand]=(counts[i.brand]||0)+1);
+  u.zone=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'GEN';
+}
+
+/* ---------- Scene ---------- */
+const canvas=document.getElementById('scene');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color('#121416');
+scene.fog=new THREE.Fog('#121416',22,48);
+const camera=new THREE.PerspectiveCamera(48,1,0.05,120);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.08;
+controls.maxPolarAngle=Math.PI*0.48; controls.minDistance=1.2; controls.maxDistance=34;
+
+scene.add(new THREE.HemisphereLight('#fff6e0','#2a2a30',1.1));
+const sun=new THREE.DirectionalLight('#ffffff',1.4); sun.position.set(4,9,4); scene.add(sun);
+for(let z=-2;z>-17;z-=4.5){const p=new THREE.PointLight('#fff1d0',6,7,1.6);p.position.set(0,3.0,z);scene.add(p);}
+
+const M=(c,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:.8,metalness:.1,...o});
+const matMetal=M('#8e959c',{metalness:.55,roughness:.45});
+const matShelf=M('#a8aeb3',{metalness:.4,roughness:.55});
+const matBlack=M('#24272b',{metalness:.3,roughness:.6});
+const matBin=M('#2f5bd3',{roughness:.55});
+const matCab=M('#7c8288',{metalness:.5,roughness:.45});
+const matCard=['#a57c4d','#b38a58','#9a7045','#bf9763'].map(c=>c);
+const box=(w,h,d,mat)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+
+// floor & markings
+const floorLen=Math.abs(backZ)+4;
+const floor=box(9,0.1,floorLen,M('#2a2d30',{roughness:.95}));
+floor.position.set(0,-0.05,-floorLen/2+2.5); scene.add(floor);
+const lineMat=new THREE.MeshBasicMaterial({color:'#f5c518'});
+[-1,1].forEach(s=>{const l=box(0.06,0.012,Math.abs(backZ)-0.2,lineMat);l.position.set(s*(AISLE/2-0.06),0.006,backZ/2+0.6);scene.add(l);});
+function stripeTex(){const c=document.createElement('canvas');c.width=256;c.height=32;const x=c.getContext('2d');x.fillStyle='#151515';x.fillRect(0,0,256,32);x.fillStyle='#f5c518';for(let i=-32;i<256;i+=32){x.beginPath();x.moveTo(i,32);x.lineTo(i+16,32);x.lineTo(i+32,0);x.lineTo(i+16,0);x.fill();}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
+const door=new THREE.Mesh(new THREE.PlaneGeometry(AISLE,0.24),new THREE.MeshBasicMaterial({map:stripeTex()}));
+door.rotation.x=-Math.PI/2; door.position.set(0,0.008,0.4); scene.add(door);
+// yellow steel beams like the real ceiling
+const beamMat=M('#d8ad12',{metalness:.4,roughness:.5});
+for(let z=-0.4;z>backZ;z-=4.2){
+  const b=box(5.2,0.16,0.12,beamMat); b.position.set(0,3.1,z); scene.add(b);
+  [-2.55,2.55].forEach(x=>{const p=box(0.12,3.1,0.12,beamMat);p.position.set(x,1.55,z);scene.add(p);});
+}
+
+const rand=(s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(7);
+const pickables=[];
+function cellLocal(u,level,slot){
+  const cw=u.w/u.slots, s=u.flip?u.slots-1-slot:slot;
+  return {x:-u.w/2+cw*(s+.5),y0:u.levels[level-1],y1:level<u.levels.length?u.levels[level]:u.h,cw};
+}
+function tag(m,u,item){m.userData.unit=u;if(item)m.userData.item=item;pickables.push(m);return m;}
+
+function buildUnit(u){
+  const g=new THREE.Group(); g.position.set(u.x,0,u.z); g.rotation.y=u.rot; u.group=g; scene.add(g);
+  if(u.type==='drawers'){
+    const base=tag(box(u.w,u.levels[0],u.d,matCab),u); base.position.y=u.levels[0]/2; g.add(base);
+    const back=tag(box(u.w,u.h-u.levels[0],0.04,matCab),u); back.position.set(0,(u.h+u.levels[0])/2,-u.d/2+0.02); g.add(back);
+    u.drawers={};
+    for(let l=1;l<=u.levels.length;l++)for(let s=0;s<u.slots;s++){
+      const c=cellLocal(u,l,s);
+      const m=new THREE.MeshStandardMaterial({color:'#dfe7ea',transparent:true,opacity:.55,roughness:.2});
+      const d=tag(box(c.cw-0.025,c.y1-c.y0-0.025,u.d-0.06,m),u); d.position.set(c.x,(c.y0+c.y1)/2,0.02); g.add(d);
+      u.drawers[l+'-'+s]=d;
+    }
+  }else{
+    const fm=u.type==='metal'?matMetal:matBlack, sm=u.type==='metal'?matShelf:matBlack;
+    for(const sx of[-1,1])for(const sz of[-1,1]){const p=tag(box(0.045,u.h,0.045,fm),u);p.position.set(sx*(u.w/2-0.02),u.h/2,sz*(u.d/2-0.02));g.add(p);}
+    for(const y of[...u.levels,u.h-0.02]){const s=tag(box(u.w,0.03,u.d,sm),u);s.position.y=y;g.add(s);}
+    if(u.type==='bins'){
+      u.bins={};
+      for(let l=1;l<=u.levels.length;l++)for(let s=0;s<u.slots;s++){
+        const c=cellLocal(u,l,s), bh=Math.min(0.26,c.y1-c.y0-0.08);
+        const b=tag(box(c.cw-0.05,bh,u.d-0.08,matBin),u); b.position.set(c.x,c.y0+0.015+bh/2,0); g.add(b);
+        const strip=tag(box(c.cw-0.12,0.05,0.01,new THREE.MeshStandardMaterial({color:'#e8ecf2',transparent:true})),u);
+        strip.position.set(c.x,c.y0+0.015+bh*0.7,u.d/2-0.035); g.add(strip); u.bins[l+'-'+s]=strip;
+      }
+    }
+  }
+  // floating label
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=112; const x=cv.getContext('2d');
+  x.fillStyle='rgba(20,22,24,.88)'; x.beginPath(); x.roundRect(4,4,248,104,16); x.fill();
+  x.fillStyle=BRANDS[u.zone].c; x.fillRect(4,92,248,12);
+  x.fillStyle='#ece8df'; x.textAlign='center'; x.font='600 46px "IBM Plex Mono", monospace'; x.fillText(u.id,128,54);
+  x.fillStyle='#9aa2a9'; x.font='500 22px "IBM Plex Sans Hebrew", sans-serif'; x.fillText(BRANDS[u.zone].label,128,82);
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
+  sp.scale.set(0.78,0.34,1); sp.position.set(0,u.h+0.32,0); sp.renderOrder=5; g.add(sp);
+}
+
+function placeItem(it){
+  const u=it.unit, c=cellLocal(u,it.level,it.slot), key=it.level+'-'+it.slot, col=new THREE.Color(BRANDS[it.brand].c);
+  if(u.type==='bins'){const s=u.bins[key]; s.material.color.copy(col); it.meshes.push(s); s.userData.item=it; return;}
+  if(u.type==='drawers'){const d=u.drawers[key]; d.material.color.copy(col).lerp(new THREE.Color('#ffffff'),.45); it.meshes.push(d); d.userData.item=it; return;}
+  const n=1+Math.floor(rand()*2);
+  for(let k=0;k<n;k++){
+    const w=(c.cw/n)*(0.7+rand()*0.2), h=(c.y1-c.y0)*(0.42+rand()*0.38), d=u.d*(0.6+rand()*0.25);
+    const m=tag(box(w,h,d,M(matCard[Math.floor(rand()*4)],{transparent:true,roughness:.9})),u,it);
+    m.position.set(c.x-c.cw/2+(c.cw/n)*(k+.5),c.y0+0.015+h/2,(rand()-.5)*0.05); u.group.add(m);
+    const lab=tag(box(w*0.62,Math.min(0.08,h*0.3),0.006,new THREE.MeshStandardMaterial({color:col,transparent:true,roughness:.6})),u,it);
+    lab.position.set(m.position.x,m.position.y+h*0.12,m.position.z+d/2+0.003); u.group.add(lab);
+    it.meshes.push(m,lab);
+  }
+}
+
+// highlight cage
+const hlGroup=new THREE.Group();
+const hlFill=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({color:'#f5c518',transparent:true,opacity:.16,depthWrite:false}));
+const hlEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),new THREE.LineBasicMaterial({color:'#f5c518'}));
+hlGroup.add(hlFill,hlEdge); hlGroup.visible=false;
+const unitEdge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),new THREE.LineBasicMaterial({color:'#f5c518',transparent:true,opacity:.55}));
+unitEdge.visible=false;
+
+/* ---------- Camera moves ---------- */
+let tween=null;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function moveCam(pos,target,dur=1000){
+  if(reduce){camera.position.copy(pos);controls.target.copy(target);return;}
+  tween={p0:camera.position.clone(),t0:controls.target.clone(),p1:pos,t1:target,start:performance.now(),dur};
+}
+const VIEWS={
+  over:()=>moveCam(new THREE.Vector3(8.5,12.5,5.5),new THREE.Vector3(0,0,-7.8)),
+  door:()=>moveCam(new THREE.Vector3(0,1.75,3.2),new THREE.Vector3(0,1.2,-6)),
+};
+function focusCell(u,level,slot){
+  const c=level?cellLocal(u,level,slot):{x:0,y0:0.9,y1:1.5};
+  const target=u.group.localToWorld(new THREE.Vector3(c.x,(c.y0+c.y1)/2,0));
+  const normal=new THREE.Vector3(0,0,1).applyQuaternion(u.group.quaternion);
+  const reach=u.side==='B'?3.0:1.7;
+  const pos=target.clone().addScaledVector(normal,reach).add(new THREE.Vector3(0,Math.max(1.4,2.9-target.y),u.side==='B'?0.3:0.7));
+  moveCam(pos,target);
+}
+
+/* ---------- Selection ---------- */
+const state={unit:null,item:null,brand:null,view:'home',q:''};
+function showHighlight(u,item){
+  u.group.add(unitEdge); unitEdge.scale.set(u.w+0.04,u.h+0.04,u.d+0.04); unitEdge.position.set(0,u.h/2,0); unitEdge.visible=true;
+  if(item){
+    const c=cellLocal(u,item.level,item.slot);
+    u.group.add(hlGroup); hlGroup.scale.set(c.cw-0.02,c.y1-c.y0-0.02,u.d+0.06); hlGroup.position.set(c.x,(c.y0+c.y1)/2,0); hlGroup.visible=true;
+  }else hlGroup.visible=false;
+}
+function selectItem(it){state.unit=it.unit;state.item=it;state.view='unit';showHighlight(it.unit,it);focusCell(it.unit,it.level,it.slot);render();openPanel();}
+function selectUnit(u){state.unit=u;state.item=null;state.view='unit';showHighlight(u,null);focusCell(u);render();openPanel();}
+function goHome(){state.unit=null;state.item=null;state.view='home';unitEdge.visible=false;hlGroup.visible=false;render();}
+
+function applyFilter(){
+  for(const it of items){
+    const on=!state.brand||it.brand===state.brand;
+    for(const m of it.meshes){m.material.transparent=true;m.material.opacity=on?(it.unit.type==='drawers'?.75:1):.12;}
+  }
+}
+
+/* ---------- Search ---------- */
+const norm=s=>s.toLowerCase().replace(/[\s\-_.]/g,'');
+function search(q){
+  const n=norm(q); if(!n)return [];
+  const exact=items.filter(i=>norm(i.sku)===n);
+  if(exact.length)return exact;
+  return items.filter(i=>norm(i.sku).includes(n)||i.name.includes(q.trim())||norm(i.loc)===n||BRANDS[i.brand].label.toLowerCase()===q.trim().toLowerCase());
+}
+
+/* ---------- Panel ---------- */
+const body=document.getElementById('panelBody'), panel=document.getElementById('panel');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cssC=b=>`style="--c:${BRANDS[b].c}"`;
+const row=it=>`<button class="row" data-sku="${esc(it.sku)}" ${cssC(it.brand)}><i></i><span class="nm"><b>${esc(it.name)}</b><span class="code">${esc(it.sku)}</span></span><span class="loc">${it.loc}</span></button>`;
+
+function homeHTML(){
+  const zones=units.filter(u=>u.side!=='M').reduce((a,u)=>{(a[u.zone]??=[]).push(u.id);return a;},{});
+  return `
+  <div><p class="eyebrow">איתור פריט</p><h2>הקלד מק״ט, המחסן יראה לך איפה</h2>
+  <p class="lead">אפשר גם ללחוץ על כל מדף במודל כדי לראות מה יש עליו, קומה אחרי קומה.</p></div>
+  <div class="demo">זו הדמיה. המבנה משוער ופריטי המלאי הם דוגמה בלבד, עד שתעביר את המיקומים האמיתיים.</div>
+  <div><h3>נסה מק״ט לדוגמה</h3><div class="try">${['5801592275','23390-E0020','CU 32 001','68191349AA','GEN-FUSE-15'].map(s=>`<button data-sku="${s}">${s}</button>`).join('')}</div></div>
+  <div><h3>איך קוראים מיקום</h3>
+    <div class="key"><div><b>L</b><span>צד</span></div><div><b>04</b><span>מדף</span></div><div><b>3</b><span>קומה מלמטה</span></div><div><b>B</b><span>תא</span></div></div>
+    <p class="lead" style="font-size:13px">L שמאל · R ימין · B קיר אחורי · M ארון מגירות. תא A הוא הקרוב לכניסה.</p></div>
+  <div><h3>אזורים במחסן</h3><div class="zones">${Object.entries(zones).map(([b,ids])=>`<button class="zone" data-unit="${ids[0]}" ${cssC(b)}><i></i>${BRANDS[b].label}<span class="code">${ids[0]}${ids.length>1?'–'+ids.at(-1).slice(2):''}</span></button>`).join('')}
+  <button class="zone" data-unit="M-01" ${cssC('GEN')}><i></i>נורות ופיוזים<span class="code">M-01</span></button></div></div>`;
+}
+function resultsHTML(list,q){
+  return `<button class="back" data-home>→ חזרה</button>
+  <div><p class="eyebrow">תוצאות חיפוש</p><h2>${list.length?`${list.length} פריטים`:'לא נמצא'}</h2>
+  ${list.length?'':`<p class="lead">אין פריט עם המק״ט <span class="code">${esc(q)}</span>. בדוק שאין טעות הקלדה, או חפש לפי שם (למשל "מסנן שמן").</p>`}</div>
+  <div class="results">${list.slice(0,40).map(row).join('')}</div>`;
+}
+function unitHTML(u,sel){
+  const lv=[];
+  for(let l=u.levels.length;l>=1;l--){
+    const cells=[];
+    for(let s=0;s<u.slots;s++){
+      const here=items.filter(i=>i.unit===u&&i.level===l&&i.slot===s);
+      const on=sel&&sel.level===l&&sel.slot===s;
+      cells.push(`<div class="cell${on?' on':''}"><span>${LETTERS[s]}</span>${here.map(i=>`<button class="it${sel===i?' on':''}" data-sku="${esc(i.sku)}" ${cssC(i.brand)} title="${esc(i.name)}"><b>${esc(i.name)}</b><span class="code">${esc(i.sku)}</span></button>`).join('')}</div>`);
+    }
+    lv.push(`<div class="lvl${sel&&sel.level===l?' on':''}"><div class="lvl-n"><b>${l}</b>קומה</div><div class="cells" style="--n:${u.slots}">${cells.join('')}</div></div>`);
+  }
+  const card=sel?`<div class="card">
+    <div class="card-top"><span class="pill" ${cssC(sel.brand)}>${BRANDS[sel.brand].label}</span><span class="code sku">${esc(sel.sku)}</span></div>
+    <div class="name">${esc(sel.name)}</div>
+    <div class="bigloc"><span class="code" id="locCode">${sel.loc}</span><button type="button" id="copyLoc">העתק</button></div>
+    <div class="facts"><span>${SIDE_HE[u.side]}</span><span>מדף <b>${u.id}</b></span><span>קומה <b>${sel.level}</b></span><span>תא <b>${LETTERS[sel.slot]}</b></span><span>במלאי <b>${sel.qty}</b></span></div>
+  </div>`:'';
+  const count=items.filter(i=>i.unit===u).length;
+  return `<button class="back" data-home>→ חזרה</button>${card}
+  <div><p class="eyebrow">${SIDE_HE[u.side]} · ${count} פריטים</p><h2>מדף <span class="code">${u.id}</span></h2></div>
+  <div class="shelf">${lv.join('')}</div>`;
+}
+function render(){
+  body.innerHTML=state.view==='home'?homeHTML():state.view==='results'?resultsHTML(search(state.q),state.q):unitHTML(state.unit,state.item);
+  body.scrollTop=0;
+}
+body.addEventListener('click',e=>{
+  const t=e.target.closest('button'); if(!t)return;
+  if(t.dataset.home!==undefined)return goHome();
+  if(t.dataset.sku){const it=items.find(i=>i.sku===t.dataset.sku); if(it)selectItem(it);}
+  else if(t.dataset.unit)selectUnit(unitById[t.dataset.unit]);
+  else if(t.id==='copyLoc'){
+    const txt=state.item.loc;
+    const ok=()=>toast(`המיקום ${txt} הועתק`);
+    try{navigator.clipboard.writeText(txt).then(ok,()=>selectText());}catch{selectText();}
+  }
+});
+function selectText(){const el=document.getElementById('locCode');const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('המיקום מסומן, אפשר להעתיק');}
+let toastT; function toast(m){const el=document.getElementById('toast');el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,1800);}
+
+document.getElementById('searchForm').addEventListener('submit',e=>{
+  e.preventDefault(); const q=document.getElementById('q').value.trim(); if(!q)return goHome();
+  const list=search(q); document.getElementById('q').blur();
+  if(list.length===1)return selectItem(list[0]);
+  state.q=q;state.view='results';render();openPanel();
+});
+document.getElementById('q').addEventListener('input',e=>{
+  const q=e.target.value.trim(); if(q.length<2)return;
+  state.q=q; state.view='results'; render();
+});
+
+// chips
+const chips=document.getElementById('chips');
+chips.innerHTML=Object.entries(BRANDS).map(([k,b])=>`<button class="chip" data-b="${k}" aria-pressed="false" style="--c:${b.c}"><i></i>${b.label}<small>${items.filter(i=>i.brand===k).length}</small></button>`).join('');
+chips.addEventListener('click',e=>{
+  const c=e.target.closest('.chip'); if(!c)return;
+  state.brand=state.brand===c.dataset.b?null:c.dataset.b;
+  chips.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.b===state.brand));
+  applyFilter();
+});
+document.getElementById('vOver').onclick=VIEWS.over;
+document.getElementById('vDoor').onclick=VIEWS.door;
+document.getElementById('handle').onclick=()=>{panel.classList.toggle('min');viewOffset();};
+function openPanel(){panel.classList.remove('min');requestAnimationFrame(viewOffset);}
+
+// picking
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2(); let down=null;
+canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{
+  if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6)return; down=null;
+  const r=canvas.getBoundingClientRect(); ptr.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
+  ray.setFromCamera(ptr,camera); const hit=ray.intersectObjects(pickables,false)[0];
+  if(!hit)return; const {item,unit}=hit.object.userData;
+  if(item&&(!state.brand||item.brand===state.brand))selectItem(item); else selectUnit(unit);
+});
+
+// layout
+function layout(){
+  const bar=document.getElementById('bar').getBoundingClientRect();
+  const app=document.getElementById('app');
+  app.style.setProperty('--chips-top',bar.height+'px');
+  app.style.setProperty('--panel-top',(bar.height+44)+'px');
+  app.style.setProperty('--views-top',(bar.height+48)+'px');
+  const w=canvas.clientWidth,h=canvas.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; viewOffset();
+}
+// keep the focused shelf in the visible part of the screen, beside or above the panel
+function viewOffset(){
+  const w=canvas.clientWidth,h=canvas.clientHeight,r=panel.getBoundingClientRect(),phone=innerWidth<=760;
+  const dx=phone?0:Math.round(r.width/2), dy=phone&&!panel.classList.contains('min')?Math.round(r.height/2):0;
+  camera.setViewOffset(w,h,dx,dy,w,h); camera.updateProjectionMatrix();
+}
+addEventListener('resize',layout);
+
+/* ---------- Boot ---------- */
+(async()=>{
+  try{await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]);}catch{}
+  units.forEach(buildUnit); items.forEach(placeItem);
+  layout();
+  camera.position.set(8.5,12.5,5.5); controls.target.set(0,0,-7.8);
+  render(); document.getElementById('loading').hidden=true;
+  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  renderer.setAnimationLoop(now=>{
+    if(tween){const k=Math.min(1,(now-tween.start)/tween.dur),e=ease(k);
+      camera.position.lerpVectors(tween.p0,tween.p1,e); controls.target.lerpVectors(tween.t0,tween.t1,e); if(k>=1)tween=null;}
+    if(hlGroup.visible)hlFill.material.opacity=.12+.1*(0.5+0.5*Math.sin(now/260));
+    controls.update(); renderer.render(scene,camera);
+  });
+})();
+</script>
+</body></html>
