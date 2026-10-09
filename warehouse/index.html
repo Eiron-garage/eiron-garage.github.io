@@ -186,17 +186,23 @@ const BRANDS = {
 };
 
 /* ---------- Warehouse layout (estimated, to be corrected) ---------- */
-const UW=1.8, UD=0.6, GAP=0.12, AISLE=1.8, START=1.4, PER_SIDE=7;
+const RL=3.0, UD=0.5, AISLE=1.8, SIDE_AISLE=1.4, START=1.6, ROWS=4, PITCH=2*UD+SIDE_AISLE;
 const SIDE_HE={L:'צד שמאל',R:'צד ימין',B:'קיר אחורי',M:'ארון מגירות'};
 const units=[];
 const metalLevels=[0.1,0.58,1.06,1.54,2.02];
-for(let i=0;i<PER_SIDE;i++){
-  const z=-(START+i*(UW+GAP)+UW/2), n=String(i+1).padStart(2,'0');
-  units.push({id:`L-${n}`,side:'L',type:'metal',x:-(AISLE/2+UD/2),z,rot:Math.PI/2,w:UW,d:UD,h:2.4,levels:metalLevels,slots:3});
-  units.push({id:`R-${n}`,side:'R',type:'metal',x:(AISLE/2+UD/2),z,rot:-Math.PI/2,w:UW,d:UD,h:2.4,levels:metalLevels,slots:3,flip:true});
+// Rows stand across the warehouse, two shelves back to back; odd number faces the entrance, even is its back side.
+for(let r=0;r<ROWS;r++){
+  const zc=-(START+UD+r*PITCH);
+  for(const side of ['L','R']){
+    const x=(side==='L'?-1:1)*(AISLE/2+RL/2);
+    [[0,zc+UD/2],[Math.PI,zc-UD/2]].forEach(([rot,z],f)=>{
+      const n=String(r*2+f+1).padStart(2,'0');
+      units.push({id:`${side}-${n}`,side,row:r+1,face:f,type:'metal',x,z,rot,w:RL,d:UD,h:2.4,levels:metalLevels,slots:4,flip:(side==='L')===(f===0)});
+    });
+  }
 }
-const backZ=-(START+PER_SIDE*(UW+GAP))-0.5-UD/2;
-[-1.95,0,1.95].forEach((x,i)=>units.push({id:`B-0${i+1}`,side:'B',type:'bins',x,z:backZ,rot:0,w:UW,d:UD,h:2.1,levels:[0.1,0.5,0.9,1.3,1.7],slots:4}));
+const backZ=-(START+ROWS*PITCH)-0.9;
+[-1.95,0,1.95].forEach((x,i)=>units.push({id:`B-0${i+1}`,side:'B',type:'bins',x,z:backZ,rot:0,w:1.8,d:0.6,h:2.1,levels:[0.1,0.5,0.9,1.3,1.7],slots:4}));
 units.push({id:'M-01',side:'M',type:'drawers',x:-(AISLE/2+0.225),z:-0.6,rot:Math.PI/2,w:0.9,d:0.45,h:1.6,levels:[0.55,0.76,0.97,1.18,1.39],slots:4});
 const unitById=Object.fromEntries(units.map(u=>[u.id,u]));
 
@@ -205,12 +211,12 @@ const GROUPS=[
  {b:'GEN',u:['L-01','L-02'],items:[['GEN-OIL-1540','שמן מנוע 15W-40 · 20 ליטר',12],['GEN-COOL-G12','נוזל קירור G12 · 5 ליטר',9],['GEN-DOT4','נוזל בלמים DOT4',14],['GEN-GRS-400','גריז ליתיום · שפופרת',20],['GEN-ATF-3','שמן גיר ATF',8],['GEN-ADB-10','AdBlue · 10 ליטר',10],['GEN-WD40','WD-40 ספריי',15],['GEN-CLN-BRK','מנקה בלמים ספריי',24]]},
  {b:'IVECO',u:['L-03','L-04'],items:[['5801592275','מסנן שמן',14],['2997305','מסנן סולר',9],['504209107','מסנן אוויר',6],['5801415504','רפידות בלם קדמיות',8],['42555508','דיסק בלם קדמי',4],['504047496','משאבת מים',2],['5801500178','רצועת מנוע',7],['41211196','פנס אחורי שמאל',3],['504130460','חיישן לחץ שמן',5],['5801426862','בולם זעזועים אחורי',4],['500054655','מסנן מייבש אוויר',6],['42548178','ממסר מצתים',10]]},
  {b:'DAF',u:['L-05','L-06'],items:[['1643070','מסנן שמן',12],['1397766','מסנן סולר',10],['1638061','מסנן אוויר',5],['1934398','רפידות בלם',6],['1640797','חיישן ABS',4],['1405418','מגב שמשה',8],['1694385','רצועת אלטרנטור',5],['2131553','מראה צד ימין',2],['1676355','מתג חלון חשמלי',3],['1928868','מסנן מייבש אוויר',4],['2022165','חיישן טמפרטורה',6]]},
- {b:'MAN',u:['L-07'],items:[['51055017160','מסנן שמן',11],['51125030061','מסנן סולר',9],['81084050020','מסנן אוויר',4],['CU 32 001','מסנן מזגן MANN',7],['81508206087','רפידות בלם',6],['51065006069','משאבת מים',2],['81259016094','חיישן ABS',3],['51958010303','רצועת מנוע',5]]},
+ {b:'MAN',u:['L-07','L-08'],items:[['51055017160','מסנן שמן',11],['51125030061','מסנן סולר',9],['81084050020','מסנן אוויר',4],['CU 32 001','מסנן מזגן MANN',7],['81508206087','רפידות בלם',6],['51065006069','משאבת מים',2],['81259016094','חיישן ABS',3],['51958010303','רצועת מנוע',5]]},
  {b:'HINO',u:['R-01','R-02'],items:[['15607-2190','מסנן שמן',15],['23390-E0020','מסנן סולר',12],['17801-E0010','מסנן אוויר',6],['04495-E0110','רפידות בלם קדמיות',7],['16100-E0373','משאבת מים',2],['81550-E0010','פנס אחורי',3],['S1561-72220','רצועת מנוע',6],['89422-E0010','חיישן טמפרטורה',5],['48510-E0080','בולם זעזועים',4]]},
  {b:'ISUZU',u:['R-03','R-04'],items:[['8-98018858-0','מסנן שמן',13],['8-98159693-0','מסנן סולר',10],['8-98140266-0','מסנן אוויר',5],['8-97367601-0','רפידות בלם',8],['8-97945185-0','חיישן מהירות',3],['8-97602049-0','משאבת מים',2],['8-98092301-0','רצועת מנוע',6],['8-98005556-0','מראה צד',2],['8-97328581-0','ממסר התנעה',4]]},
  {b:'JEEP',u:['R-05'],items:[['68191349AA','מסנן שמן',18],['68257030AA','מסנן אוויר',7],['68144219AA','רפידות בלם קדמיות',6],['68079487AA','מסנן מזגן',9],['68225170AA','מצתים',16],['68100436AA','משאבת מים',2],['68376010AA','חיישן לחץ צמיגים',8]]},
  {b:'RAM',u:['R-06'],items:[['68507598AA','מסנן שמן',10],['68233626AA','מסנן אוויר',5],['68052370AA','רפידות בלם',6],['68436216AA','מסנן סולר',7],['68283391AA','רצועת מנוע',4],['68193834AA','בולם זעזועים',4],['68170049AA','מגב שמשה',8]]},
- {b:'GEN',u:['R-07'],items:[['GEN-HOSE-13','צינור לחץ 13 מ״מ · גליל',3],['GEN-HOSE-19','צינור מים 19 מ״מ · גליל',2],['GEN-BAT-100','מצבר 12V 100Ah',3],['GEN-WIRE-25','כבל חשמל 2.5 ממ״ר · גליל',4],['GEN-TIE-300','אזיקונים 300 מ״מ · שקית',30],['GEN-TAPE','סרט בידוד',40]]},
+ {b:'GEN',u:['R-07','R-08'],items:[['GEN-HOSE-13','צינור לחץ 13 מ״מ · גליל',3],['GEN-HOSE-19','צינור מים 19 מ״מ · גליל',2],['GEN-BAT-100','מצבר 12V 100Ah',3],['GEN-WIRE-25','כבל חשמל 2.5 ממ״ר · גליל',4],['GEN-TIE-300','אזיקונים 300 מ״מ · שקית',30],['GEN-TAPE','סרט בידוד',40]]},
  {b:'GEN',u:['B-01','B-02','B-03'],items:[['GEN-M8-30','בורג M8×30',400],['GEN-M10-40','בורג M10×40',250],['GEN-NUT-M8','אום M8',600],['GEN-NUT-M10','אום M10',400],['GEN-WSH-8','דסקית 8 מ״מ',800],['GEN-CLP-20','מהדק צינור 20–32',120],['GEN-CLP-40','מהדק צינור 40–60',80],['GEN-ORING','סט אורינגים',12],['GEN-CPLR','מחברי אוויר מהירים',40],['GEN-TERM','נעלי כבל',300],['GEN-SPLIT','פיני ביטחון',500],['GEN-RIVET','מסמרות שליפה',350]]},
  {b:'GEN',u:['M-01'],items:[['GEN-H7-24','נורה H7 24V',36],['GEN-P21-24','נורה P21W 24V',60],['GEN-FUSE-15','פיוז 15A',120],['GEN-FUSE-30','פיוז 30A',90],['GEN-RLY-24','ממסר 24V חמישה פינים',22],['GEN-LED-SIDE','פנס צד LED',14],['GEN-FLSH','ממסר מהבהב 24V',8]]},
 ];
@@ -260,7 +266,7 @@ const box=(w,h,d,mat)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
 
 // floor & markings
 const floorLen=Math.abs(backZ)+4;
-const floor=box(9,0.1,floorLen,M('#2a2d30',{roughness:.95}));
+const floor=box(10.5,0.1,floorLen,M('#2a2d30',{roughness:.95}));
 floor.position.set(0,-0.05,-floorLen/2+2.5); scene.add(floor);
 const lineMat=new THREE.MeshBasicMaterial({color:'#f5c518'});
 [-1,1].forEach(s=>{const l=box(0.06,0.012,Math.abs(backZ)-0.2,lineMat);l.position.set(s*(AISLE/2-0.06),0.006,backZ/2+0.6);scene.add(l);});
@@ -270,8 +276,8 @@ door.rotation.x=-Math.PI/2; door.position.set(0,0.008,0.4); scene.add(door);
 // yellow steel beams like the real ceiling
 const beamMat=M('#d8ad12',{metalness:.4,roughness:.5});
 for(let z=-0.4;z>backZ;z-=4.2){
-  const b=box(5.2,0.16,0.12,beamMat); b.position.set(0,3.1,z); scene.add(b);
-  [-2.55,2.55].forEach(x=>{const p=box(0.12,3.1,0.12,beamMat);p.position.set(x,1.55,z);scene.add(p);});
+  const b=box(9,0.16,0.12,beamMat); b.position.set(0,3.1,z); scene.add(b);
+  [-4.45,4.45].forEach(x=>{const p=box(0.12,3.1,0.12,beamMat);p.position.set(x,1.55,z);scene.add(p);});
 }
 
 const rand=(s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;})(7);
@@ -316,7 +322,7 @@ function buildUnit(u){
   x.fillStyle='#9aa2a9'; x.font='500 22px "IBM Plex Sans Hebrew", sans-serif'; x.fillText(BRANDS[u.zone].label,128,82);
   const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
-  sp.scale.set(0.78,0.34,1); sp.position.set(0,u.h+0.32,0); sp.renderOrder=5; g.add(sp);
+  sp.scale.set(0.78,0.34,1); sp.position.set(0,u.h+0.32,u.type==='metal'?u.d/2+0.35:0); sp.renderOrder=5; g.add(sp);
 }
 
 function placeItem(it){
@@ -350,15 +356,18 @@ function moveCam(pos,target,dur=1000){
   tween={p0:camera.position.clone(),t0:controls.target.clone(),p1:pos,t1:target,start:performance.now(),dur};
 }
 const VIEWS={
-  over:()=>moveCam(new THREE.Vector3(8.5,12.5,5.5),new THREE.Vector3(0,0,-7.8)),
+  over:()=>moveCam(new THREE.Vector3(9,13,5),new THREE.Vector3(0,0,-6.5)),
   door:()=>moveCam(new THREE.Vector3(0,1.75,3.2),new THREE.Vector3(0,1.2,-6)),
 };
 function focusCell(u,level,slot){
   const c=level?cellLocal(u,level,slot):{x:0,y0:0.9,y1:1.5};
   const target=u.group.localToWorld(new THREE.Vector3(c.x,(c.y0+c.y1)/2,0));
   const normal=new THREE.Vector3(0,0,1).applyQuaternion(u.group.quaternion);
-  const reach=u.side==='B'?3.0:1.7;
-  const pos=target.clone().addScaledVector(normal,reach).add(new THREE.Vector3(0,Math.max(1.4,2.9-target.y),u.side==='B'?0.3:0.7));
+  const up=Math.max(1.6,3.5-target.y);
+  // row shelves: look from the side aisle, a bit toward the main aisle and above the rows
+  const off=u.type==='metal'?new THREE.Vector3(u.side==='L'?1.9:-1.9,up,0).addScaledVector(normal,1.3)
+    :normal.clone().multiplyScalar(u.side==='B'?3.0:1.7).add(new THREE.Vector3(0,up,u.side==='B'?0.3:0.7));
+  const pos=target.clone().add(off);
   moveCam(pos,target);
 }
 
@@ -406,7 +415,7 @@ function homeHTML(){
   <div><h3>נסה מק״ט לדוגמה</h3><div class="try">${['5801592275','23390-E0020','CU 32 001','68191349AA','GEN-FUSE-15'].map(s=>`<button data-sku="${s}">${s}</button>`).join('')}</div></div>
   <div><h3>איך קוראים מיקום</h3>
     <div class="key"><div><b>L</b><span>צד</span></div><div><b>04</b><span>מדף</span></div><div><b>3</b><span>קומה מלמטה</span></div><div><b>B</b><span>תא</span></div></div>
-    <p class="lead" style="font-size:13px">L שמאל · R ימין · B קיר אחורי · M ארון מגירות. תא A הוא הקרוב לכניסה.</p></div>
+    <p class="lead" style="font-size:13px">L שמאל · R ימין · B קיר אחורי · M ארון מגירות. המדפים עומדים בשורות לרוחב, שניים גב אל גב: מספר אי־זוגי פונה לכניסה, והזוגי שאחריו הוא הצד האחורי של אותה שורה. תא A הוא הקרוב לשביל הראשי.</p></div>
   <div><h3>אזורים במחסן</h3><div class="zones">${Object.entries(zones).map(([b,ids])=>`<button class="zone" data-unit="${ids[0]}" ${cssC(b)}><i></i>${BRANDS[b].label}<span class="code">${ids[0]}${ids.length>1?'–'+ids.at(-1).slice(2):''}</span></button>`).join('')}
   <button class="zone" data-unit="M-01" ${cssC('GEN')}><i></i>נורות ופיוזים<span class="code">M-01</span></button></div></div>`;
 }
@@ -416,6 +425,7 @@ function resultsHTML(list,q){
   ${list.length?'':`<p class="lead">אין פריט עם המק״ט <span class="code">${esc(q)}</span>. בדוק שאין טעות הקלדה, או חפש לפי שם (למשל "מסנן שמן").</p>`}</div>
   <div class="results">${list.slice(0,40).map(row).join('')}</div>`;
 }
+const where=u=>u.row?`${SIDE_HE[u.side]} · שורה ${u.row} · ${u.face?'צד אחורי':'פונה לכניסה'}`:SIDE_HE[u.side];
 function unitHTML(u,sel){
   const lv=[];
   for(let l=u.levels.length;l>=1;l--){
@@ -431,11 +441,11 @@ function unitHTML(u,sel){
     <div class="card-top"><span class="pill" ${cssC(sel.brand)}>${BRANDS[sel.brand].label}</span><span class="code sku">${esc(sel.sku)}</span></div>
     <div class="name">${esc(sel.name)}</div>
     <div class="bigloc"><span class="code" id="locCode">${sel.loc}</span><button type="button" id="copyLoc">העתק</button></div>
-    <div class="facts"><span>${SIDE_HE[u.side]}</span><span>מדף <b>${u.id}</b></span><span>קומה <b>${sel.level}</b></span><span>תא <b>${LETTERS[sel.slot]}</b></span><span>במלאי <b>${sel.qty}</b></span></div>
+    <div class="facts"><span>${where(u)}</span><span>מדף <b>${u.id}</b></span><span>קומה <b>${sel.level}</b></span><span>תא <b>${LETTERS[sel.slot]}</b></span><span>במלאי <b>${sel.qty}</b></span></div>
   </div>`:'';
   const count=items.filter(i=>i.unit===u).length;
   return `<button class="back" data-home>→ חזרה</button>${card}
-  <div><p class="eyebrow">${SIDE_HE[u.side]} · ${count} פריטים</p><h2>מדף <span class="code">${u.id}</span></h2></div>
+  <div><p class="eyebrow">${where(u)} · ${count} פריטים</p><h2>מדף <span class="code">${u.id}</span></h2></div>
   <div class="shelf">${lv.join('')}</div>`;
 }
 function render(){
@@ -514,7 +524,7 @@ addEventListener('resize',layout);
   try{await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]);}catch{}
   units.forEach(buildUnit); items.forEach(placeItem);
   layout();
-  camera.position.set(8.5,12.5,5.5); controls.target.set(0,0,-7.8);
+  camera.position.set(9,13,5); controls.target.set(0,0,-6.5);
   render(); document.getElementById('loading').hidden=true;
   const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
   renderer.setAnimationLoop(now=>{
