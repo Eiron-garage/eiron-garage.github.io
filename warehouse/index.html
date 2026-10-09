@@ -1,4 +1,15 @@
-<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0">
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#121416">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="מחסן עירון">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>מחסן מטיילי עירון</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +33,8 @@
   --f-code:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
 }
-html,body{height:100%}
+html,body{height:100%;margin:0}
+body{padding-top:env(safe-area-inset-top,0px)}
 [hidden]{display:none!important}
 body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;overflow:hidden}
 *{box-sizing:border-box}
@@ -187,6 +199,22 @@ button.stat:hover{border-color:var(--hazard)}
 .toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:9px 16px;border-radius:8px;font-size:13.5px;font-weight:500;z-index:5;max-width:calc(100% - 32px)}
 .loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none}
 
+.me{cursor:pointer}
+.me:hover{border-color:var(--hazard)}
+.av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--hazard);color:var(--hazard-ink);font-weight:700;font-size:14px}
+.log-row .av{width:24px;height:24px;font-size:12px;background:var(--panel-2);color:var(--ink)}
+.conn{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);vertical-align:middle;margin-inline-start:4px}
+.conn.on{background:var(--ok)}
+.login{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--ground) 82%,transparent);backdrop-filter:blur(6px)}
+.login-box{width:min(380px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.login-box h2{margin:0;font-family:var(--f-display);font-size:38px;line-height:1}
+.login-box p{margin:0;color:var(--muted)}
+.login-box label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.login-box input{background:var(--panel-2);border:1.5px solid var(--line);border-radius:9px;padding:11px 12px;font-size:16px;outline:none;color:var(--ink)}
+.login-box input:focus{border-color:var(--hazard)}
+.maprow{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.maprow select{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 8px}
+input[type=file]{color:var(--muted);font-size:14px}
 @media (max-width:760px){
   .bar{gap:10px;padding:12px 16px 8px}
   .title h1{font-size:30px}
@@ -205,6 +233,8 @@ button.stat:hover{border-color:var(--hazard)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
+</head>
+<body>
 
 <div id="app">
   <canvas id="scene" aria-label="מודל תלת־ממד של מחסן מטיילי עירון"></canvas>
@@ -213,14 +243,14 @@ button.stat:hover{border-color:var(--hazard)}
   <header class="bar" id="bar">
     <div class="title">
       <div class="mark" aria-hidden="true"></div>
-      <div><h1>מטיילי עירון</h1><p>מחסן חלקים · איתור לפי מק״ט</p></div>
+      <div><h1>מטיילי עירון <span class="conn" id="conn" title="מתחבר…"></span></h1><p>מחסן חלקים · איתור לפי מק״ט</p></div>
     </div>
     <form class="search" id="searchForm" role="search">
       <label class="sr" for="q">חיפוש לפי מק״ט או שם פריט</label>
       <input id="q" type="search" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="הקלד מק״ט או שם פריט">
       <button type="submit">אתר</button>
     </form>
-    <div class="me" id="me" hidden><img id="meAvatar" alt=""><div><b id="meName"></b><span id="meRole"></span></div></div>
+    <button class="me" id="me" type="button" hidden><span class="av" id="meAv"></span><div><b id="meName"></b><span id="meRole"></span></div></button>
   </header>
 
   <nav class="chips" id="chips" aria-label="סינון לפי יצרן"></nav>
@@ -235,14 +265,35 @@ button.stat:hover{border-color:var(--hazard)}
     <button type="button" id="vDoor">מהכניסה</button>
   </div>
   <div class="toast" id="toast" role="status" hidden></div>
+
+  <section class="login" id="login" hidden>
+    <form class="login-box" id="loginForm">
+      <div class="mark" aria-hidden="true"></div>
+      <h2>מחסן מטיילי עירון</h2>
+      <p>כניסה עם סיסמת המוסך, כמו בלוח הרכבים. פעם אחת בכל מכשיר.</p>
+      <label>סיסמת המוסך<input id="loginPass" type="password" autocomplete="current-password" required dir="ltr"></label>
+      <label>השם שלך (יופיע ליד כל עדכון)<input id="loginName" autocomplete="name" placeholder="לדוגמה: שגיא"></label>
+      <p class="ferr" id="loginErr"></p>
+      <button class="btn primary" id="loginBtn" type="submit">כניסה</button>
+    </form>
+  </section>
 </div>
 
+<script src="../config.js"></script>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
 </script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection as fsCollection, doc as fsDoc, query as fsQuery,
+         where as fsWhere, orderBy as fsOrderBy, limit as fsLimit,
+         onSnapshot, getDocs, setDoc, updateDoc, deleteDoc, addDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+
+// Sample items for trying the system ("load sample items" on an empty warehouse); they are marked demo and removable in one click.
+const DEMO={"GEN-OIL-1540": {"sku": "GEN-OIL-1540", "name": "שמן מנוע 15W-40 · 20 ליטר", "brand": "GEN", "unit": "L-01", "level": 1, "slot": 0, "qty": 12}, "GEN-COOL-G12": {"sku": "GEN-COOL-G12", "name": "נוזל קירור G12 · 5 ליטר", "brand": "GEN", "unit": "L-01", "level": 2, "slot": 1, "qty": 9}, "GEN-DOT4": {"sku": "GEN-DOT4", "name": "נוזל בלמים DOT4", "brand": "GEN", "unit": "L-01", "level": 3, "slot": 2, "qty": 14}, "GEN-GRS-400": {"sku": "GEN-GRS-400", "name": "גריז ליתיום · שפופרת", "brand": "GEN", "unit": "L-01", "level": 4, "slot": 3, "qty": 20}, "GEN-ATF-3": {"sku": "GEN-ATF-3", "name": "שמן גיר ATF", "brand": "GEN", "unit": "L-02", "level": 1, "slot": 0, "qty": 8}, "GEN-ADB-10": {"sku": "GEN-ADB-10", "name": "AdBlue · 10 ליטר", "brand": "GEN", "unit": "L-02", "level": 2, "slot": 1, "qty": 10}, "GEN-WD40": {"sku": "GEN-WD40", "name": "WD-40 ספריי", "brand": "GEN", "unit": "L-02", "level": 3, "slot": 2, "qty": 15}, "GEN-CLN-BRK": {"sku": "GEN-CLN-BRK", "name": "מנקה בלמים ספריי", "brand": "GEN", "unit": "L-02", "level": 4, "slot": 3, "qty": 24}, "5801592275": {"sku": "5801592275", "name": "מסנן שמן", "brand": "IVECO", "unit": "L-03", "level": 1, "slot": 0, "qty": 14}, "2997305": {"sku": "2997305", "name": "מסנן סולר", "brand": "IVECO", "unit": "L-03", "level": 1, "slot": 3, "qty": 9}, "504209107": {"sku": "504209107", "name": "מסנן אוויר", "brand": "IVECO", "unit": "L-03", "level": 2, "slot": 2, "qty": 6}, "5801415504": {"sku": "5801415504", "name": "רפידות בלם קדמיות", "brand": "IVECO", "unit": "L-03", "level": 3, "slot": 1, "qty": 8}, "42555508": {"sku": "42555508", "name": "דיסק בלם קדמי", "brand": "IVECO", "unit": "L-03", "level": 4, "slot": 0, "qty": 4}, "504047496": {"sku": "504047496", "name": "משאבת מים", "brand": "IVECO", "unit": "L-03", "level": 4, "slot": 3, "qty": 2}, "5801500178": {"sku": "5801500178", "name": "רצועת מנוע", "brand": "IVECO", "unit": "L-04", "level": 1, "slot": 0, "qty": 7}, "41211196": {"sku": "41211196", "name": "פנס אחורי שמאל", "brand": "IVECO", "unit": "L-04", "level": 1, "slot": 3, "qty": 3}, "504130460": {"sku": "504130460", "name": "חיישן לחץ שמן", "brand": "IVECO", "unit": "L-04", "level": 2, "slot": 2, "qty": 0}, "5801426862": {"sku": "5801426862", "name": "בולם זעזועים אחורי", "brand": "IVECO", "unit": "L-04", "level": 3, "slot": 1, "qty": 4}, "500054655": {"sku": "500054655", "name": "מסנן מייבש אוויר", "brand": "IVECO", "unit": "L-04", "level": 4, "slot": 0, "qty": 6}, "42548178": {"sku": "42548178", "name": "ממסר מצתים", "brand": "IVECO", "unit": "L-04", "level": 4, "slot": 3, "qty": 10}, "1643070": {"sku": "1643070", "name": "מסנן שמן", "brand": "DAF", "unit": "L-05", "level": 1, "slot": 0, "qty": 12}, "1397766": {"sku": "1397766", "name": "מסנן סולר", "brand": "DAF", "unit": "L-05", "level": 1, "slot": 3, "qty": 10}, "1638061": {"sku": "1638061", "name": "מסנן אוויר", "brand": "DAF", "unit": "L-05", "level": 2, "slot": 2, "qty": 5}, "1934398": {"sku": "1934398", "name": "רפידות בלם", "brand": "DAF", "unit": "L-05", "level": 3, "slot": 1, "qty": 6}, "1640797": {"sku": "1640797", "name": "חיישן ABS", "brand": "DAF", "unit": "L-05", "level": 4, "slot": 0, "qty": 1}, "1405418": {"sku": "1405418", "name": "מגב שמשה", "brand": "DAF", "unit": "L-05", "level": 4, "slot": 3, "qty": 8}, "1694385": {"sku": "1694385", "name": "רצועת אלטרנטור", "brand": "DAF", "unit": "L-06", "level": 1, "slot": 0, "qty": 5}, "2131553": {"sku": "2131553", "name": "מראה צד ימין", "brand": "DAF", "unit": "L-06", "level": 2, "slot": 0, "qty": 2}, "1676355": {"sku": "1676355", "name": "מתג חלון חשמלי", "brand": "DAF", "unit": "L-06", "level": 3, "slot": 0, "qty": 3}, "1928868": {"sku": "1928868", "name": "מסנן מייבש אוויר", "brand": "DAF", "unit": "L-06", "level": 4, "slot": 0, "qty": 4}, "2022165": {"sku": "2022165", "name": "חיישן טמפרטורה", "brand": "DAF", "unit": "L-06", "level": 5, "slot": 0, "qty": 6}, "51055017160": {"sku": "51055017160", "name": "מסנן שמן", "brand": "MAN", "unit": "L-07", "level": 1, "slot": 0, "qty": 11}, "51125030061": {"sku": "51125030061", "name": "מסנן סולר", "brand": "MAN", "unit": "L-07", "level": 2, "slot": 1, "qty": 9}, "81084050020": {"sku": "81084050020", "name": "מסנן אוויר", "brand": "MAN", "unit": "L-07", "level": 3, "slot": 2, "qty": 4}, "CU_32_001": {"sku": "CU 32 001", "name": "מסנן מזגן MANN", "brand": "MAN", "unit": "L-07", "level": 4, "slot": 3, "qty": 7}, "81508206087": {"sku": "81508206087", "name": "רפידות בלם", "brand": "MAN", "unit": "L-08", "level": 1, "slot": 0, "qty": 6}, "51065006069": {"sku": "51065006069", "name": "משאבת מים", "brand": "MAN", "unit": "L-08", "level": 2, "slot": 1, "qty": 0}, "81259016094": {"sku": "81259016094", "name": "חיישן ABS", "brand": "MAN", "unit": "L-08", "level": 3, "slot": 2, "qty": 3}, "51958010303": {"sku": "51958010303", "name": "רצועת מנוע", "brand": "MAN", "unit": "L-08", "level": 4, "slot": 3, "qty": 5}, "15607-2190": {"sku": "15607-2190", "name": "מסנן שמן", "brand": "HINO", "unit": "R-01", "level": 1, "slot": 0, "qty": 15}, "23390-E0020": {"sku": "23390-E0020", "name": "מסנן סולר", "brand": "HINO", "unit": "R-01", "level": 2, "slot": 0, "qty": 12}, "17801-E0010": {"sku": "17801-E0010", "name": "מסנן אוויר", "brand": "HINO", "unit": "R-01", "level": 3, "slot": 0, "qty": 6}, "04495-E0110": {"sku": "04495-E0110", "name": "רפידות בלם קדמיות", "brand": "HINO", "unit": "R-01", "level": 4, "slot": 0, "qty": 7}, "16100-E0373": {"sku": "16100-E0373", "name": "משאבת מים", "brand": "HINO", "unit": "R-01", "level": 5, "slot": 0, "qty": 2}, "81550-E0010": {"sku": "81550-E0010", "name": "פנס אחורי", "brand": "HINO", "unit": "R-02", "level": 1, "slot": 0, "qty": 3}, "S1561-72220": {"sku": "S1561-72220", "name": "רצועת מנוע", "brand": "HINO", "unit": "R-02", "level": 2, "slot": 1, "qty": 6}, "89422-E0010": {"sku": "89422-E0010", "name": "חיישן טמפרטורה", "brand": "HINO", "unit": "R-02", "level": 3, "slot": 2, "qty": 5}, "48510-E0080": {"sku": "48510-E0080", "name": "בולם זעזועים", "brand": "HINO", "unit": "R-02", "level": 4, "slot": 3, "qty": 4}, "8-98018858-0": {"sku": "8-98018858-0", "name": "מסנן שמן", "brand": "ISUZU", "unit": "R-03", "level": 1, "slot": 0, "qty": 13}, "8-98159693-0": {"sku": "8-98159693-0", "name": "מסנן סולר", "brand": "ISUZU", "unit": "R-03", "level": 2, "slot": 0, "qty": 10}, "8-98140266-0": {"sku": "8-98140266-0", "name": "מסנן אוויר", "brand": "ISUZU", "unit": "R-03", "level": 3, "slot": 0, "qty": 5}, "8-97367601-0": {"sku": "8-97367601-0", "name": "רפידות בלם", "brand": "ISUZU", "unit": "R-03", "level": 4, "slot": 0, "qty": 8}, "8-97945185-0": {"sku": "8-97945185-0", "name": "חיישן מהירות", "brand": "ISUZU", "unit": "R-03", "level": 5, "slot": 0, "qty": 3}, "8-97602049-0": {"sku": "8-97602049-0", "name": "משאבת מים", "brand": "ISUZU", "unit": "R-04", "level": 1, "slot": 0, "qty": 2}, "8-98092301-0": {"sku": "8-98092301-0", "name": "רצועת מנוע", "brand": "ISUZU", "unit": "R-04", "level": 2, "slot": 1, "qty": 6}, "8-98005556-0": {"sku": "8-98005556-0", "name": "מראה צד", "brand": "ISUZU", "unit": "R-04", "level": 3, "slot": 2, "qty": 0}, "8-97328581-0": {"sku": "8-97328581-0", "name": "ממסר התנעה", "brand": "ISUZU", "unit": "R-04", "level": 4, "slot": 3, "qty": 4}, "68191349AA": {"sku": "68191349AA", "name": "מסנן שמן", "brand": "JEEP", "unit": "R-05", "level": 1, "slot": 0, "qty": 18}, "68257030AA": {"sku": "68257030AA", "name": "מסנן אוויר", "brand": "JEEP", "unit": "R-05", "level": 1, "slot": 2, "qty": 7}, "68144219AA": {"sku": "68144219AA", "name": "רפידות בלם קדמיות", "brand": "JEEP", "unit": "R-05", "level": 2, "slot": 0, "qty": 6}, "68079487AA": {"sku": "68079487AA", "name": "מסנן מזגן", "brand": "JEEP", "unit": "R-05", "level": 2, "slot": 2, "qty": 9}, "68225170AA": {"sku": "68225170AA", "name": "מצתים", "brand": "JEEP", "unit": "R-05", "level": 3, "slot": 0, "qty": 16}, "68100436AA": {"sku": "68100436AA", "name": "משאבת מים", "brand": "JEEP", "unit": "R-05", "level": 3, "slot": 2, "qty": 2}, "68376010AA": {"sku": "68376010AA", "name": "חיישן לחץ צמיגים", "brand": "JEEP", "unit": "R-05", "level": 4, "slot": 0, "qty": 8}, "68507598AA": {"sku": "68507598AA", "name": "מסנן שמן", "brand": "RAM", "unit": "R-06", "level": 1, "slot": 0, "qty": 10}, "68233626AA": {"sku": "68233626AA", "name": "מסנן אוויר", "brand": "RAM", "unit": "R-06", "level": 1, "slot": 2, "qty": 5}, "68052370AA": {"sku": "68052370AA", "name": "רפידות בלם", "brand": "RAM", "unit": "R-06", "level": 2, "slot": 0, "qty": 6}, "68436216AA": {"sku": "68436216AA", "name": "מסנן סולר", "brand": "RAM", "unit": "R-06", "level": 2, "slot": 2, "qty": 7}, "68283391AA": {"sku": "68283391AA", "name": "רצועת מנוע", "brand": "RAM", "unit": "R-06", "level": 3, "slot": 0, "qty": 4}, "68193834AA": {"sku": "68193834AA", "name": "בולם זעזועים", "brand": "RAM", "unit": "R-06", "level": 3, "slot": 2, "qty": 4}, "68170049AA": {"sku": "68170049AA", "name": "מגב שמשה", "brand": "RAM", "unit": "R-06", "level": 4, "slot": 0, "qty": 8}, "GEN-HOSE-13": {"sku": "GEN-HOSE-13", "name": "צינור לחץ 13 מ״מ · גליל", "brand": "GEN", "unit": "R-07", "level": 1, "slot": 0, "qty": 3}, "GEN-HOSE-19": {"sku": "GEN-HOSE-19", "name": "צינור מים 19 מ״מ · גליל", "brand": "GEN", "unit": "R-07", "level": 2, "slot": 2, "qty": 2}, "GEN-BAT-100": {"sku": "GEN-BAT-100", "name": "מצבר 12V 100Ah", "brand": "GEN", "unit": "R-07", "level": 4, "slot": 0, "qty": 3}, "GEN-WIRE-25": {"sku": "GEN-WIRE-25", "name": "כבל חשמל 2.5 ממ״ר · גליל", "brand": "GEN", "unit": "R-08", "level": 1, "slot": 0, "qty": 4}, "GEN-TIE-300": {"sku": "GEN-TIE-300", "name": "אזיקונים 300 מ״מ · שקית", "brand": "GEN", "unit": "R-08", "level": 2, "slot": 2, "qty": 30}, "GEN-TAPE": {"sku": "GEN-TAPE", "name": "סרט בידוד", "brand": "GEN", "unit": "R-08", "level": 4, "slot": 0, "qty": 40}, "GEN-M8-30": {"sku": "GEN-M8-30", "name": "בורג M8×30", "brand": "GEN", "unit": "B-01", "level": 1, "slot": 0, "qty": 400}, "GEN-M10-40": {"sku": "GEN-M10-40", "name": "בורג M10×40", "brand": "GEN", "unit": "B-01", "level": 2, "slot": 1, "qty": 250}, "GEN-NUT-M8": {"sku": "GEN-NUT-M8", "name": "אום M8", "brand": "GEN", "unit": "B-01", "level": 3, "slot": 2, "qty": 600}, "GEN-NUT-M10": {"sku": "GEN-NUT-M10", "name": "אום M10", "brand": "GEN", "unit": "B-01", "level": 4, "slot": 3, "qty": 400}, "GEN-WSH-8": {"sku": "GEN-WSH-8", "name": "דסקית 8 מ״מ", "brand": "GEN", "unit": "B-02", "level": 1, "slot": 0, "qty": 800}, "GEN-CLP-20": {"sku": "GEN-CLP-20", "name": "מהדק צינור 20–32", "brand": "GEN", "unit": "B-02", "level": 2, "slot": 1, "qty": 120}, "GEN-CLP-40": {"sku": "GEN-CLP-40", "name": "מהדק צינור 40–60", "brand": "GEN", "unit": "B-02", "level": 3, "slot": 2, "qty": 80}, "GEN-ORING": {"sku": "GEN-ORING", "name": "סט אורינגים", "brand": "GEN", "unit": "B-02", "level": 4, "slot": 3, "qty": 12}, "GEN-CPLR": {"sku": "GEN-CPLR", "name": "מחברי אוויר מהירים", "brand": "GEN", "unit": "B-03", "level": 1, "slot": 0, "qty": 40}, "GEN-TERM": {"sku": "GEN-TERM", "name": "נעלי כבל", "brand": "GEN", "unit": "B-03", "level": 2, "slot": 1, "qty": 300}, "GEN-SPLIT": {"sku": "GEN-SPLIT", "name": "פיני ביטחון", "brand": "GEN", "unit": "B-03", "level": 3, "slot": 2, "qty": 500}, "GEN-RIVET": {"sku": "GEN-RIVET", "name": "מסמרות שליפה", "brand": "GEN", "unit": "B-03", "level": 4, "slot": 3, "qty": 350}, "GEN-H7-24": {"sku": "GEN-H7-24", "name": "נורה H7 24V", "brand": "GEN", "unit": "M-01", "level": 1, "slot": 0, "qty": 36}, "GEN-P21-24": {"sku": "GEN-P21-24", "name": "נורה P21W 24V", "brand": "GEN", "unit": "M-01", "level": 1, "slot": 2, "qty": 60}, "GEN-FUSE-15": {"sku": "GEN-FUSE-15", "name": "פיוז 15A", "brand": "GEN", "unit": "M-01", "level": 2, "slot": 0, "qty": 120}, "GEN-FUSE-30": {"sku": "GEN-FUSE-30", "name": "פיוז 30A", "brand": "GEN", "unit": "M-01", "level": 2, "slot": 2, "qty": 90}, "GEN-RLY-24": {"sku": "GEN-RLY-24", "name": "ממסר 24V חמישה פינים", "brand": "GEN", "unit": "M-01", "level": 3, "slot": 0, "qty": 22}, "GEN-LED-SIDE": {"sku": "GEN-LED-SIDE", "name": "פנס צד LED", "brand": "GEN", "unit": "M-01", "level": 3, "slot": 2, "qty": 14}, "GEN-FLSH": {"sku": "GEN-FLSH", "name": "ממסר מהבהב 24V", "brand": "GEN", "unit": "M-01", "level": 4, "slot": 0, "qty": 8}, "GEN-GLOVE": {"sku": "GEN-GLOVE", "name": "כפפות עבודה · קרטון", "brand": "GEN", "unit": "C-01", "level": 1, "slot": 0, "qty": 6}, "GEN-ABSORB": {"sku": "GEN-ABSORB", "name": "סופגי שמן · חבילה", "brand": "GEN", "unit": "C-01", "level": 2, "slot": 0, "qty": 10}, "GEN-MARKER": {"sku": "GEN-MARKER", "name": "טושים לסימון", "brand": "GEN", "unit": "C-01", "level": 3, "slot": 0, "qty": 20}, "GEN-PACKTAPE": {"sku": "GEN-PACKTAPE", "name": "סרט אריזה", "brand": "GEN", "unit": "C-01", "level": 4, "slot": 0, "qty": 12}};
 
 /* =========================================================
    Brands
@@ -581,8 +632,10 @@ function focusCell(u,level,slot){
    State + data
    ========================================================= */
 let items=[], byKey={}, logEntries=[];
-const state={view:'home',unit:null,itemKey:null,brand:null,q:'',list:null,listTitle:'',form:null,qtyDraft:null,loaded:false,demoArm:false,busy:false};
-let db=null,user=null,downloads=null,myId=null,canWrite=false,dataProblem=null;
+const state={view:'home',unit:null,itemKey:null,brand:null,q:'',list:null,listTitle:'',form:null,qtyDraft:null,loaded:false,demoArm:false,busy:false,imp:null};
+let db=null,fdb=null,fauth=null,myId=null,canWrite=false,dataProblem=null;
+const ITEMS='warehouse_items', LOG='warehouse_log';
+const store={get(k){try{return localStorage.getItem(k)||'';}catch{return '';}},set(k,v){try{localStorage.setItem(k,v);}catch{}}};
 const names={};
 
 function normalizeItem(id,d){
@@ -593,63 +646,162 @@ function normalizeItem(id,d){
     loc:valid?`${d.unit}-${level}-${LETTERS[slot]}`:null,meshes:[]};
 }
 const curItem=()=>state.itemKey?byKey[state.itemKey]:null;
+function resolveNames(){}
+const nameOf=id=>id||'מישהו';
 
-async function resolveNames(ids){
-  if(!user)return;
-  const need=[...new Set(ids.filter(Boolean))].filter(i=>!(i in names));
-  if(!need.length)return;
-  need.forEach(i=>names[i]=names[i]||{name:'',avatar:''});
-  const ps=await user.profiles(need);
-  for(const id of need)names[id]={name:ps[id]?.name||'',avatar:ps[id]?.avatarUrl||''};
-  if(state.view!=='form')renderKeepScroll();
+/* ---------- Firebase: same project and garage password as the vehicle board (../config.js) ---------- */
+const cfg=window.FIREBASE_CONFIG;
+// Offline, Firestore keeps the write on the device and sends it when the connection returns,
+// so don't leave the button spinning: wait at most a few seconds for the server.
+const settle=p=>Promise.race([p,new Promise(r=>setTimeout(r,4000))]);
+const wrapQ=s=>({docs:s.docs.map(d=>({id:d.id,exists:true,data:()=>d.data()})),size:s.size,empty:s.empty,metadata:s.metadata});
+function fsColl(path,cons=[]){
+  const ref=fsCollection(fdb,path), q=()=>cons.length?fsQuery(ref,...cons):ref;
+  return {
+    where:(f,op,v)=>fsColl(path,[...cons,fsWhere(f,op,v)]),
+    orderBy:(f,d='asc')=>fsColl(path,[...cons,fsOrderBy(f,d)]),
+    limit:n=>fsColl(path,[...cons,fsLimit(n)]),
+    get:async()=>wrapQ(await getDocs(q())),
+    onSnapshot:(next,err)=>onSnapshot(q(),{includeMetadataChanges:true},s=>next(wrapQ(s)),err),
+    doc:id=>{const r=fsDoc(fdb,path,id);return{set:d=>settle(setDoc(r,d)),update:d=>settle(updateDoc(r,d)),delete:()=>settle(deleteDoc(r))};},
+    add:d=>settle(addDoc(ref,d)),
+  };
 }
-const nameOf=id=>names[id]?.name||'מישהו';
-
-async function initData(){
-  const cl=window.claude;
-  if(!cl?.use){dataProblem='offline';render();return;}
-  [db,user,downloads]=await Promise.all([cl.use('db'),cl.use('user'),cl.use('downloads')]);
-  if(user){
-    const me=await user.me(); myId=me.id;
-    if(myId)names[myId]={name:me.name,avatar:me.avatarUrl};
-    const cw=await user.can('data.write');
-    canWrite=cw===null?true:cw;
-    document.getElementById('me').hidden=false;
-    document.getElementById('meAvatar').src=me.avatarUrl;
-    document.getElementById('meName').textContent=me.name||'אורח';
-    document.getElementById('meRole').textContent=me.isOwner?'מנהל המערכת':canWrite?'מחסנאי · עריכה':'צפייה בלבד';
-    layout();
+async function batchWrite(ops){ // ops: [{key,data}|{key,del:true}], 400 per commit
+  for(let i=0;i<ops.length;i+=400){
+    const b=writeBatch(fdb);
+    for(const o of ops.slice(i,i+400)){const r=fsDoc(fdb,ITEMS,o.key);if(o.del)b.delete(r);else b.set(r,o.data,{merge:true});}
+    await settle(b.commit());
   }
-  if(!db){dataProblem='offline';canWrite=false;render();return;}
-  db.collection('items').onSnapshot(snap=>{
-    items=snap.docs.map(d=>normalizeItem(d.id,d.data())); byKey=Object.fromEntries(items.map(i=>[i.key,i]));
-    state.loaded=true; rebuildContents(); refreshChips();
-    if(state.pendingKey&&byKey[state.pendingKey]){const k=state.pendingKey;state.pendingKey=null;return selectItem(byKey[k]);}
-    const it=curItem();
-    if(state.itemKey&&!it&&state.view==='unit')state.itemKey=null;
-    if(state.view==='unit'){if(it&&it.valid)showHighlight(unitById[it.unit],it);else if(state.unit)showHighlight(state.unit,null);}
-    if(state.view==='results'&&state.listTitle==='search')state.list=search(state.q);
-    if(state.view!=='form')renderKeepScroll();
-  },err=>{dataProblem=err.code;render();});
-  db.collection('log').orderBy('t','desc').limit(60).onSnapshot(snap=>{
-    logEntries=snap.docs.map(d=>({id:d.id,...d.data()}));
-    if(state.view==='home'||state.view==='log')renderKeepScroll();
-  },()=>{});
 }
+function setConn(on){const c=document.getElementById('conn');c.classList.toggle('on',on);c.title=on?'מחובר, מתעדכן בזמן אמת':'אין חיבור, מוצג מידע שמור';}
+function updateMe(){
+  document.getElementById('me').hidden=false;
+  document.getElementById('meAv').textContent=(myId||'?').trim().charAt(0)||'?';
+  document.getElementById('meName').textContent=myId||'לא ידוע';
+  document.getElementById('meRole').textContent='החלפת שם / יציאה';
+  layout();
+}
+let unsubs=[];
+function initData(){
+  if(!cfg||!cfg.apiKey){dataProblem='setup';render();return;}
+  const app=initializeApp(cfg); fauth=getAuth(app);
+  fdb=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
+  db={collection:p=>fsColl(p)};
+  onAuthStateChanged(fauth,u=>{
+    unsubs.forEach(f=>f()); unsubs=[];
+    if(!u){canWrite=false;document.getElementById('login').hidden=false;document.getElementById('loginName').value=store.get('garageUser');return;}
+    document.getElementById('login').hidden=true;
+    canWrite=true; dataProblem=null; myId=store.get('garageUser')||'לא ידוע'; updateMe();
+    unsubs.push(db.collection(ITEMS).onSnapshot(snap=>{
+      setConn(!snap.metadata.fromCache);
+      items=snap.docs.map(d=>normalizeItem(d.id,d.data())); byKey=Object.fromEntries(items.map(i=>[i.key,i]));
+      state.loaded=true; rebuildContents(); refreshChips();
+      if(state.pendingKey&&byKey[state.pendingKey]){const k=state.pendingKey;state.pendingKey=null;return selectItem(byKey[k]);}
+      const it=curItem();
+      if(state.itemKey&&!it&&state.view==='unit')state.itemKey=null;
+      if(state.view==='unit'){if(it&&it.valid)showHighlight(unitById[it.unit],it);else if(state.unit)showHighlight(state.unit,null);}
+      if(state.view==='results'&&state.listTitle==='search')state.list=search(state.q);
+      if(state.view!=='form'&&state.view!=='import'&&state.view!=='me')renderKeepScroll();
+    },err=>{console.error(err);dataProblem=err.code||'denied';canWrite=false;render();}));
+    unsubs.push(db.collection(LOG).orderBy('t','desc').limit(60).onSnapshot(snap=>{
+      logEntries=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(state.view==='home'||state.view==='log')renderKeepScroll();
+    },()=>{}));
+  });
+}
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const err=document.getElementById('loginErr'), btn=document.getElementById('loginBtn'); err.textContent=''; btn.disabled=true;
+  try{
+    const nm=document.getElementById('loginName').value.trim(); if(nm)store.set('garageUser',nm);
+    await signInWithEmailAndPassword(fauth,window.GARAGE_LOGIN_EMAIL,document.getElementById('loginPass').value);
+    document.getElementById('loginPass').value='';
+  }catch(x){
+    const c=x.code||'';
+    err.textContent=/invalid-credential|wrong-password|user-not-found/.test(c)?'סיסמה שגויה':c.includes('too-many')?'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.':c.includes('network')?'אין חיבור לאינטרנט':'הכניסה נכשלה: '+c;
+  }finally{btn.disabled=false;}
+});
 
 function writeFailed(e){
-  if(e?.code==='invalid_argument'){canWrite=false;toast('אין לך הרשאה לשנות את המלאי. בקש מהבעלים הרשאת עריכה.');render();}
-  else if(e?.code==='quota_exceeded')toast('המאגר מלא. צריך למחוק פריטים או פעילות ישנה.');
+  const c=String(e?.code||'');
+  if(c.includes('permission'))toast('אין הרשאה לשמור. צריך לעדכן את חוקי האבטחה ב-Firebase (הוראות בקובץ README).');
   else toast('השמירה נכשלה. בדוק את החיבור ונסה שוב.');
 }
 let pruned=false;
 async function addLog(act,sku,info){
-  try{await db.collection('log').add({t:Date.now(),by:myId,act,sku,info:info||''});}catch{}
+  try{await db.collection(LOG).add({t:Date.now(),by:myId,act,sku,info:info||''});}catch{}
   if(pruned)return; pruned=true;
   try{ // keep the activity log to the last 120 days
-    const old=await db.collection('log').where('t','<',Date.now()-120*864e5).limit(50).get();
-    for(const d of old.docs)await db.collection('log').doc(d.id).delete();
+    const old=await db.collection(LOG).where('t','<',Date.now()-120*864e5).limit(50).get();
+    for(const d of old.docs)await db.collection(LOG).doc(d.id).delete();
   }catch{}
+}
+
+/* ---------- Import from Google Sheets / Excel (CSV) ---------- */
+const IMP_FIELDS=[['sku','מק״ט',/מק"?״?ט|מקט|sku|part|קוד|catalog/i],['name','שם / תיאור',/שם|תיאור|name|desc/i],['qty','כמות',/כמות|qty|quant|מלאי|יתרה/i],['brand','יצרן',/יצרן|מותג|brand|make|ספק/i],['loc','מיקום',/מיקום|location|מדף|loc/i]];
+const BRAND_WORDS={IVECO:/iveco|איווקו|איבקו/i,DAF:/\bdaf\b|דאף/i,MAN:/\bman\b|מאן/i,HINO:/hino|הינו/i,ISUZU:/isuzu|איסוזו/i,JEEP:/jeep|ג'?יפ/i,RAM:/\bram\b|ראם/i};
+const brandFrom=s=>Object.entries(BRAND_WORDS).find(([,re])=>re.test(s||''))?.[0]||null;
+function parseLoc(s){const m=String(s||'').trim().toUpperCase().match(/^([LRBMC])\s*-?\s*(\d{1,2})\s*-\s*(\d)\s*-\s*([A-D])$/);if(!m)return null;
+  const unit=`${m[1]}-${m[2].padStart(2,'0')}`,u=unitById[unit],level=+m[3],slot=LETTERS.indexOf(m[4]);
+  return u&&level<=u.levels.length&&slot<u.slots?{unit,level,slot}:null;}
+function parseCSV(t){
+  t=t.replace(/^﻿/,''); const first=t.split('\n')[0];
+  const d=(first.match(/\t/g)||[]).length>(first.match(/,/g)||[]).length?'\t':(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':',';
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else if(c==='"'&&f==='')q=true; else if(c===d){row.push(f);f='';} else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';} else if(c!=='\r')f+=c;}
+  if(f||row.length){row.push(f);rows.push(row);}
+  return rows.filter(r=>r.some(x=>x.trim()));
+}
+function impPlan(){
+  const im=state.imp, m=im.map, cell=(r,k)=>m[k]>=0?String(r[m[k]]??'').trim():'';
+  const out=new Map(); let noLoc=0;
+  for(const r of im.rows){
+    const sku=cell(r,'sku'); if(!sku)continue; const key=keyOf(sku); const ex=byKey[key];
+    const data={sku,name:cell(r,'name')||ex?.name||'',brand:brandFrom(cell(r,'brand'))||ex?.brand||'GEN',updatedAt:Date.now(),updatedBy:myId,demo:false};
+    const qs=cell(r,'qty').replace(/[^\d.-]/g,''); if(qs!=='')data.qty=Math.max(0,Math.round(+qs)||0); else if(!ex)data.qty=0;
+    const loc=parseLoc(cell(r,'loc')); if(loc)Object.assign(data,loc); else if(!ex){Object.assign(data,{unit:'',level:0,slot:0});noLoc++;}
+    if(!ex)data.note='';
+    out.set(key,{key,data,isNew:!ex});
+  }
+  const ops=[...out.values()];
+  return {ops,news:ops.filter(o=>o.isNew).length,upd:ops.filter(o=>!o.isNew).length,noLoc};
+}
+function importHTML(){
+  const im=state.imp;
+  let inner='';
+  if(im?.rows){
+    const p=impPlan(), m=im.map;
+    inner=`<div class="field"><span class="lab">התאמת עמודות</span>${IMP_FIELDS.map(([k,l])=>`<label class="maprow">${l}<select data-map="${k}"><option value="-1">— אין —</option>${im.head.map((h,i)=>`<option value="${i}" ${m[k]===i?'selected':''}>${esc(h||'עמודה '+(i+1))}</option>`).join('')}</select></label>`).join('')}</div>
+    <div class="results">${im.rows.slice(0,4).map(r=>{const c=k=>m[k]>=0?esc(r[m[k]]??''):'';return `<div class="row" style="--c:var(--line)"><i></i><span class="nm"><b>${c('name')||'—'}</b><span class="code">${c('sku')}</span></span><span class="end"><span class="loc">${c('loc')||'—'}</span><span class="q ok">${c('qty')||'0'}</span></span></div>`;}).join('')}</div>
+    <div class="note">${p.ops.length} פריטים בקובץ: ${p.news} חדשים, ${p.upd} קיימים יתעדכנו.${p.noLoc?` ל־${p.noLoc} פריטים חדשים אין מיקום עדיין. הם יופיעו ברשימת "בלי מיקום", ותשבצו אותם במדפים בזמן הספירה.`:''}</div>
+    ${m.sku<0?'<p class="ferr">בחרו איזו עמודה היא המק״ט.</p>':''}
+    <button class="btn primary" data-act="doimport" ${state.busy||m.sku<0||!p.ops.length?'disabled':''}>${state.busy?'מייבא…':`ייבא ${p.ops.length} פריטים`}</button>`;
+  }
+  return `<button class="back" data-home>→ חזרה</button>
+  <div><p class="eyebrow">ייבוא</p><h2>ייבוא רשימת מלאי</h2>
+  <p class="lead">ב־Google Sheets: קובץ ← הורדה ← CSV. באקסל: שמירה בשם ← CSV. אחר כך בוחרים את הקובץ כאן.</p></div>
+  <div class="field"><label for="impFile">קובץ CSV</label><input type="file" id="impFile" accept=".csv,.tsv,.txt,text/csv"></div>
+  ${im?.fileName?`<p class="hint">${esc(im.fileName)} · ${im.rows?.length||0} שורות</p>`:''}${inner}`;
+}
+async function doImport(){
+  const p=impPlan(); state.busy=true; renderKeepScroll();
+  try{await batchWrite(p.ops); await addLog('add','ייבוא',`${p.ops.length} פריטים מהקובץ ${state.imp.fileName}`); toast(`יובאו ${p.ops.length} פריטים`); state.imp=null; state.busy=false; goHome();}
+  catch(e){state.busy=false;renderKeepScroll();writeFailed(e);}
+}
+async function seedDemo(){
+  state.busy=true; renderKeepScroll();
+  try{await batchWrite(Object.entries(DEMO).map(([key,d])=>({key,data:{...d,note:'',demo:true,updatedAt:Date.now(),updatedBy:myId}}))); toast('נטענו פריטי הדוגמה');}
+  catch(e){writeFailed(e);}
+  state.busy=false; renderKeepScroll();
+}
+function meHTML(){
+  return `<button class="back" data-home>→ חזרה</button>
+  <div><p class="eyebrow">המכשיר הזה</p><h2>המשתמש</h2><p class="lead">השם מופיע ליד כל שינוי ביומן הפעילות.</p></div>
+  <div class="field"><label for="meInput">השם שלך</label><input type="text" id="meInput" value="${esc(myId==='לא ידוע'?'':myId)}"></div>
+  <div class="actions"><button class="btn primary grow" data-act="savename">שמירה</button><button class="btn danger" data-act="logout">יציאה מהחשבון</button></div>`;
 }
 
 /* =========================================================
@@ -694,11 +846,11 @@ const row=it=>`<button class="row" data-sku="${esc(it.key)}" ${cssC(it.brand)}><
 const ACT={add:['הוספה','add'],move:['העברה','move'],qty:['כמות','qty'],edit:['עדכון','move'],del:['מחיקה','del']};
 function logRows(list){
   resolveNames(list.map(l=>l.by));
-  return `<div class="log">${list.map(l=>{const a=ACT[l.act]||['שינוי',''];const av=names[l.by]?.avatar;return `<div class="log-row">${av?`<img alt="" src="${esc(av)}">`:'<img alt="">'}<div class="what"><span class="act ${a[1]}">${a[0]}</span><span class="code">${esc(l.sku)}</span><small>${esc(l.info)} · ${esc(nameOf(l.by))}</small></div><time>${ago(l.t)}</time></div>`;}).join('')}</div>`;
+  return `<div class="log">${list.map(l=>{const a=ACT[l.act]||['שינוי',''];return `<div class="log-row"><span class="av">${esc(String(l.by||'?').charAt(0))}</span><div class="what"><span class="act ${a[1]}">${a[0]}</span><span class="code">${esc(l.sku)}</span><small>${esc(l.info)} · ${esc(nameOf(l.by))}</small></div><time>${ago(l.t)}</time></div>`;}).join('')}</div>`;
 }
 function problemHTML(){
   if(!dataProblem)return '';
-  return `<div class="note err">${dataProblem==='offline'?'אין חיבור למאגר המלאי בתצוגה הזו. פתחו את הקישור כשאתם מחוברים לחשבון Claude שקיבל גישה לעמוד.':'החיבור למאגר המלאי נותק. רעננו את הדף.'}</div>`;
+  return `<div class="note err">${dataProblem==='setup'?'חסרות הגדרות Firebase בקובץ config.js.':dataProblem.includes('permission')?'אין הרשאה לקרוא את המלאי. צריך להוסיף את חוקי המחסן ב־Firebase ← Firestore ← Rules (הוראות בקובץ README).':'החיבור למאגר המלאי נותק. רעננו את הדף.'}</div>`;
 }
 function homeHTML(){
   const out=items.filter(i=>i.qty<=0), low=items.filter(i=>i.qty>0&&i.qty<=2), demo=items.filter(i=>i.demo), bad=items.filter(i=>!i.valid);
@@ -714,11 +866,11 @@ function homeHTML(){
     <button class="stat bad" data-act="out"><b>${out.length}</b><span>אזלו</span></button>
     <button class="stat warn" data-act="low"><b>${low.length}</b><span>מלאי נמוך</span></button>
   </div>`:(dataProblem?'':'<p class="hint">טוען את המלאי…</p>')}
-  ${edit||(downloads&&items.length)?`<div class="actions">${edit?'<button class="btn primary grow" data-act="new">+ הוספת פריט</button>':''}${downloads&&items.length?'<button class="btn" data-act="csv">ייצוא לאקסל</button>':''}</div>`:''}
+  ${edit?`<div class="actions"><button class="btn primary grow" data-act="new">+ הוספת פריט</button><button class="btn" data-act="import">ייבוא מ־Sheets</button>${items.length?'<button class="btn" data-act="csv">ייצוא לאקסל</button>':''}</div>`:''}
   ${demo.length?`<div class="note">${demo.length} מהפריטים הם פריטי דוגמה, כדי להראות איך זה עובד. לפני שמזינים את המלאי האמיתי, מוחקים אותם כאן.
     ${edit?`<div><button class="btn small danger${state.demoArm?' armed':''}" data-act="demo" ${state.busy?'disabled':''}>${state.busy?'מוחק…':state.demoArm?`לחץ שוב למחיקת ${demo.length} פריטי הדוגמה`:'מחיקת פריטי הדוגמה'}</button></div>`:''}</div>`:''}
-  ${state.loaded&&!items.length?`<div class="note">המחסן עדיין ריק. ${edit?'לחצו על "הוספת פריט" כדי להזין את הפריט הראשון.':'הפריטים יופיעו כאן ברגע שהמחסנאים יזינו אותם.'}</div>`:''}
-  ${bad.length?`<div class="note err">${bad.length} פריטים רשומים במיקום שלא קיים במפה. <button class="btn small" data-act="bad">הצג אותם</button></div>`:''}
+  ${state.loaded&&!items.length?`<div class="note">המחסן עדיין ריק. ${edit?'אפשר להוסיף פריט, לייבא את הרשימה מ־Google Sheets, או לטעון פריטי דוגמה כדי לראות איך זה עובד.':'הפריטים יופיעו כאן ברגע שהמחסנאים יזינו אותם.'}${edit?`<div><button class="btn small" data-act="seed" ${state.busy?'disabled':''}>${state.busy?'טוען…':'טען 100 פריטי דוגמה'}</button></div>`:''}</div>`:''}
+  ${bad.length?`<div class="note err">${bad.length} פריטים עדיין בלי מיקום במפה. <button class="btn small" data-act="bad">הצג אותם</button></div>`:''}
   ${items.length?`<div><h3>נסה מק״ט לדוגמה</h3><div class="try">${items.filter(i=>i.valid).filter((_,k)=>k%9===0).slice(0,5).map(i=>`<button data-sku="${esc(i.key)}">${esc(i.sku)}</button>`).join('')}</div></div>`:''}
   ${logEntries.length?`<div><h3>פעילות אחרונה <button data-act="log">הכל</button></h3>${logRows(logEntries.slice(0,5))}</div>`:''}
   <div><h3>איך קוראים מיקום</h3>
@@ -748,7 +900,7 @@ function unitHTML(){
     card=`<div class="card">
       <div class="card-top"><span class="pill" ${cssC(sel.brand)}>${BRANDS[sel.brand].label}</span><span class="code sku">${esc(sel.sku)}</span>${sel.demo?'<span class="q warn">דוגמה</span>':''}</div>
       <div class="name">${esc(sel.name)}</div>
-      <div class="bigloc">${sel.valid?`<span class="code" id="locCode">${sel.loc}</span><button type="button" data-act="copy">העתק</button>`:`<span class="code none">המיקום הרשום (${esc(sel.unit||'ריק')}) לא קיים במפה</span>`}</div>
+      <div class="bigloc">${sel.valid?`<span class="code" id="locCode">${sel.loc}</span><button type="button" data-act="copy">העתק</button>`:`<span class="code none">${sel.unit?`המיקום הרשום (${esc(sel.unit)}) לא קיים במפה`:'עדיין לא שובץ במדף. לחצו "עריכה" כדי לבחור מיקום.'}</span>`}</div>
       ${sel.valid?`<div class="facts"><span>${where(u)}</span><span>קומה <b>${sel.level}</b></span><span>תא <b>${LETTERS[sel.slot]}</b></span></div>`:''}
       <div class="qtyrow">${edit?`<div class="stepper"><button type="button" data-act="dec" aria-label="פחות">−</button><input id="qtyIn" type="number" inputmode="numeric" min="0" value="${q}" aria-label="כמות במלאי"><button type="button" data-act="inc" aria-label="יותר">+</button></div>
         ${dirty?'<button class="btn primary small" data-act="saveqty">שמור כמות</button>':`<span class="q ${qtyClass(sel.qty)}">${qtyText(sel.qty)}</span>`}`
@@ -805,7 +957,7 @@ function logHTML(){
 }
 function render(){
   const v=state.view;
-  body.innerHTML=v==='home'?homeHTML():v==='results'?resultsHTML():v==='unit'?unitHTML():v==='form'?formHTML():logHTML();
+  body.innerHTML=v==='home'?homeHTML():v==='results'?resultsHTML():v==='unit'?unitHTML():v==='form'?formHTML():v==='import'?importHTML():v==='me'?meHTML():logHTML();
 }
 function renderKeepScroll(){const s=body.scrollTop;render();body.scrollTop=s;}
 
@@ -834,7 +986,7 @@ async function submitForm(){
   const key=f.mode==='add'?keyOf(f.sku):f.key;
   state.busy=true; renderKeepScroll();
   try{
-    await db.collection('items').doc(key).set(doc);
+    await db.collection(ITEMS).doc(key).set(doc);
     if(f.mode==='add')await addLog('add',f.sku,`${f.name} · ${loc} · ${qty} יח׳`);
     else{
       const o=f.orig, moved=o.loc!==loc, qd=o.qty!==qty;
@@ -848,17 +1000,17 @@ async function submitForm(){
 }
 async function deleteItem(){
   const f=state.form; state.busy=true; renderKeepScroll();
-  try{await db.collection('items').doc(f.key).delete(); await addLog('del',f.sku,f.name); state.busy=false; state.form=null; toast('הפריט נמחק'); goHome();}
+  try{await db.collection(ITEMS).doc(f.key).delete(); await addLog('del',f.sku,f.name); state.busy=false; state.form=null; toast('הפריט נמחק'); goHome();}
   catch(e){state.busy=false;renderKeepScroll();writeFailed(e);}
 }
 async function saveQty(){
   const it=curItem(), q=Math.max(0,Math.round(+state.qtyDraft||0));
-  try{await db.collection('items').doc(it.key).update({qty:q,updatedAt:Date.now(),updatedBy:myId}); await addLog('qty',it.sku,`מ־${it.qty} ל־${q} יח׳`); state.qtyDraft=null; toast('הכמות עודכנה'); renderKeepScroll();}
+  try{await db.collection(ITEMS).doc(it.key).update({qty:q,updatedAt:Date.now(),updatedBy:myId}); await addLog('qty',it.sku,`מ־${it.qty} ל־${q} יח׳`); state.qtyDraft=null; toast('הכמות עודכנה'); renderKeepScroll();}
   catch(e){writeFailed(e);}
 }
 async function deleteDemo(){
   const demo=items.filter(i=>i.demo); state.busy=true; renderKeepScroll();
-  try{for(const it of demo)await db.collection('items').doc(it.key).delete(); await addLog('del','דוגמה',`${demo.length} פריטי דוגמה נמחקו`); toast('פריטי הדוגמה נמחקו');}
+  try{await batchWrite(demo.map(i=>({key:i.key,del:true}))); await addLog('del','דוגמה',`${demo.length} פריטי דוגמה נמחקו`); toast('פריטי הדוגמה נמחקו');}
   catch(e){writeFailed(e);}
   state.busy=false; state.demoArm=false; renderKeepScroll();
 }
@@ -866,9 +1018,9 @@ async function exportCsv(){
   const head=['מק"ט','שם','יצרן','מיקום','מדף','קומה','תא','כמות','הערה','עודכן'];
   const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
   const rows=[...items].sort((a,b)=>(a.loc||'').localeCompare(b.loc||'')).map(i=>[i.sku,i.name,BRANDS[i.brand].label,i.loc||'',i.unit,i.level,LETTERS[i.slot]||'',i.qty,i.note,i.updatedAt?new Date(i.updatedAt).toLocaleDateString('he-IL'):''].map(q).join(','));
-  const csv='﻿'+[head.map(q).join(','),...rows].join('\r\n');
-  try{await downloads.save({filename:`warehouse-${new Date().toISOString().slice(0,10)}.csv`,data:csv});}
-  catch(e){if(e?.code!=='declined')toast('ההורדה לא זמינה כאן.');}
+  const csv='\ufeff'+[head.map(q).join(','),...rows].join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`מלאי-מחסן-${new Date().toISOString().slice(0,10)}.csv`; document.body.append(a); a.click(); a.remove();
 }
 
 /* =========================================================
@@ -891,6 +1043,11 @@ body.addEventListener('click',e=>{
   }
   if(t.dataset.sku){const it=byKey[t.dataset.sku]; if(it)selectItem(it); return;}
   if(t.dataset.unit)return selectUnit(unitById[t.dataset.unit]);
+  if(a==='import'){state.imp=state.imp||{};state.view='import';render();body.scrollTop=0;return openPanel();}
+  if(a==='doimport')return doImport();
+  if(a==='seed')return seedDemo();
+  if(a==='savename'){const v=document.getElementById('meInput').value.trim();if(v){store.set('garageUser',v);myId=v;updateMe();toast('השם נשמר');}return goHome();}
+  if(a==='logout'){signOut(fauth);return goHome();}
   if(a==='new')return openForm('add');
   if(a==='newq')return openForm('add',{sku:state.q});
   if(a==='newhere')return openForm('add',{unit:state.unit.id});
@@ -898,7 +1055,7 @@ body.addEventListener('click',e=>{
   if(a==='all')return showList([...items].sort((x,y)=>(x.loc||'').localeCompare(y.loc||'')),'כל המלאי');
   if(a==='out')return showList(items.filter(i=>i.qty<=0),'פריטים שאזלו');
   if(a==='low')return showList(items.filter(i=>i.qty>0&&i.qty<=2),'מלאי נמוך');
-  if(a==='bad')return showList(items.filter(i=>!i.valid),'מיקום לא קיים במפה');
+  if(a==='bad')return showList(items.filter(i=>!i.valid),'פריטים בלי מיקום');
   if(a==='log'){state.view='log';render();body.scrollTop=0;return;}
   if(a==='csv')return exportCsv();
   if(a==='demo'){if(!state.demoArm){state.demoArm=true;return renderKeepScroll();}return deleteDemo();}
@@ -928,6 +1085,15 @@ body.addEventListener('input',e=>{
   }
 });
 body.addEventListener('change',e=>{
+  if(e.target.id==='impFile'){
+    const f=e.target.files[0]; if(!f)return;
+    f.text().then(t=>{const rows=parseCSV(t); if(!rows.length){toast('הקובץ ריק');return;}
+      const head=rows[0].map(h=>h.trim()), map={};
+      for(const [k,,re] of IMP_FIELDS)map[k]=head.findIndex(h=>re.test(h));
+      state.imp={fileName:f.name,head,rows:rows.slice(1),map}; renderKeepScroll();});
+    return;
+  }
+  if(e.target.dataset.map){state.imp.map[e.target.dataset.map]=+e.target.value;return renderKeepScroll();}
   if(state.view==='form'&&e.target.id==='f_unit'){
     const f=state.form; f.unit=e.target.value; const u=unitById[f.unit];
     if(u){f.level=Math.min(f.level,u.levels.length);f.slot=Math.min(f.slot,u.slots-1);}
@@ -957,6 +1123,7 @@ chips.addEventListener('click',e=>{
   chips.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.b===state.brand));
   applyFilter();
 });
+document.getElementById('me').onclick=()=>{state.view='me';render();openPanel();};
 document.getElementById('vOver').onclick=VIEWS.over;
 document.getElementById('vDoor').onclick=VIEWS.door;
 document.getElementById('handle').onclick=()=>{panel.classList.toggle('min');viewOffset();};
@@ -1015,4 +1182,6 @@ addEventListener('resize',layout);
   initData();
 })();
 </script>
-</body></html>
+
+</body>
+</html>
