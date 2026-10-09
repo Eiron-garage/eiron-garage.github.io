@@ -13,7 +13,7 @@
 <title>מחסן מטיילי עירון</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karantina:wght@400;700&family=Heebo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
 /* Layout: full-bleed 3D warehouse; header + search float on top, catalog panel docks right (bottom sheet on phones). One committed dark "night shift" look, yellow from the steel beams. */
 :root{
@@ -28,8 +28,8 @@
   --ok:#4cc38a;
   --warn:#f0a43a;
   --bad:#ef5b5b;
-  --f-display:'Karantina','IBM Plex Sans Hebrew',system-ui,sans-serif;
-  --f-body:'IBM Plex Sans Hebrew',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --f-display:'Karantina','Heebo',system-ui,sans-serif;
+  --f-body:'Heebo',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
   --f-code:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
 }
@@ -390,7 +390,6 @@ const matDeck=M('#2b2e32',{metalness:.3,roughness:.65});
 const matBin=M('#2f5bd3',{roughness:.5});
 const matCab=M('#7f868d',{metalness:.5,roughness:.45});
 const matDoor=M('#8b9299',{metalness:.5,roughness:.4,side:THREE.DoubleSide});
-const matBeam=M('#d9ae14',{metalness:.35,roughness:.5});
 const matWall=M('#d9d6cf',{roughness:.95});
 const SHARED=new Set([matRack,matDeck,matBin,matCab,matDoor]);
 
@@ -433,11 +432,7 @@ wall(frontLen,(AISLE/2+0.15+frontLen/2),0.6,Math.PI,false);
 const lintel=box(AISLE+0.3,0.5,0.18,matWall); lintel.position.set(0,WALL_H-0.25,0.6); scene.add(lintel);
 const roller=box(AISLE+0.3,0.28,0.32,M('#6d7277',{metalness:.5})); roller.position.set(0,WALL_H-0.62,0.75); scene.add(roller);
 
-// yellow steel beams + tube lights (as in the real place)
-for(let z=-0.2;z>backZ;z-=3.6){
-  const b=box(WALL_X*2-0.2,0.2,0.12,matBeam); b.position.set(0,3.3,z); scene.add(b);
-  const f=box(WALL_X*2-0.2,0.03,0.22,matBeam); f.position.set(0,3.2,z); scene.add(f);
-}
+// ceiling lights
 for(let z=-1.9;z>backZ+0.6;z-=3.6){
   const p=new THREE.PointLight('#fff4dc',7,8,1.5);p.position.set(0,3.0,z);scene.add(p);
   for(const x of[-2.6,2.6]){const q=new THREE.PointLight('#fff4dc',3.5,6,1.6);q.position.set(x,2.9,z);scene.add(q);}
@@ -517,7 +512,7 @@ function drawSign(u,zone){
   x.fillStyle='rgba(20,22,24,.9)'; x.beginPath(); x.roundRect(4,4,248,104,16); x.fill();
   x.fillStyle=zone?BRANDS[zone].c:'#3a3f44'; x.fillRect(4,92,248,12);
   x.fillStyle='#ece8df'; x.textAlign='center'; x.font='600 46px "IBM Plex Mono", monospace'; x.fillText(u.id,128,54);
-  x.fillStyle='#9aa2a9'; x.font='500 22px "IBM Plex Sans Hebrew", sans-serif'; x.fillText(zone?BRANDS[zone].label:'פנוי',128,82);
+  x.fillStyle='#9aa2a9'; x.font='500 22px "Heebo", sans-serif'; x.fillText(zone?BRANDS[zone].label:'פנוי',128,82);
   u.signTex.needsUpdate=true;
 }
 
