@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// חוקי אבטחה למסד הנתונים.
+// מדביקים את כל הקובץ ב: Firebase → Firestore Database → Rules → Publish
+// רק חשבון המוסך יכול לקרוא ולכתוב. אין כאן בדיקת שדות, כדי שאפשר יהיה
+// להוסיף שדות ושלבים באפליקציה בלי לעדכן את החוקים בכל פעם.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /vehicles/{id} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'm.eiron.co.il@gmail.com';
+    }
+  }
+}
